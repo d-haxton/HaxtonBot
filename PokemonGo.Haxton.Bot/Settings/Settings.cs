@@ -2,6 +2,7 @@
 using PokemonGo.RocketAPI.Enums;
 using System;
 using System.Collections.Generic;
+using System.Configuration;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -13,18 +14,19 @@ namespace PokemonGo.Haxton.Bot.Settings
     {
         public Settings()
         {
-            AuthType = AuthType.Google;
-            DefaultLatitude = 32.7089420005122;
-            DefaultLongitude = -117.160908000026;
-            DefaultAltitude = 10;
-            PtcPassword = "";
-            PtcUsername = "";
+            AuthType =
+                (AuthType)Enum.Parse(typeof(AuthType), ConfigurationManager.AppSettings["AccountType"]);
+            DefaultLatitude = ConfigurationManager.AppSettings["DefaultLatitude"];
+            DefaultLongitude = ConfigurationManager.AppSettings["DefaultLongitude"];
+            DefaultAltitude = ConfigurationManager.AppSettings["DefaultAltitude"];
+            PtcUsername = ConfigurationManager.AppSettings["PtcUsername"];
+            PtcPassword = ConfigurationManager.AppSettings["password"];
         }
 
         public AuthType AuthType { get; }
-        public double DefaultLatitude { get; }
-        public double DefaultLongitude { get; }
-        public double DefaultAltitude { get; }
+        public string DefaultLatitude { get; }
+        public string DefaultLongitude { get; }
+        public string DefaultAltitude { get; }
 
         private string _googleRefreshToken;
 

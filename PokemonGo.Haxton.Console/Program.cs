@@ -17,7 +17,6 @@ namespace PokemonGo.Haxton.Console
 {
     internal class Program
     {
-        private static Logger logger = LogManager.GetCurrentClassLogger();
         private static Container container;
 
         private static void Main(string[] args)
@@ -48,9 +47,6 @@ namespace PokemonGo.Haxton.Console
                     s.WithDefaultConventions();
                 });
             });
-            var test = container.GetInstance<ILogicSettings>();
-            var x = test.EvolveAllPokemonAboveIv;
-
             var login = container.GetInstance<IPoGoLogin>();
             login.DoLogin();
             var bot = container.GetInstance<IPoGoBot>();
