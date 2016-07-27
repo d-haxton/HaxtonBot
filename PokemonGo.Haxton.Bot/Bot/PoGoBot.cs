@@ -253,6 +253,7 @@ namespace PokemonGo.Haxton.Bot.Bot
         {
             if (LuckyEggUsed.AddMinutes(30) < DateTime.Now)
             {
+                LuckyEggUsed = DateTime.Now;
                 var inventoryContent = _inventory.Items;
 
                 var luckyEggs = inventoryContent.Where(p => p.ItemId == ItemId.ItemLuckyEgg);
