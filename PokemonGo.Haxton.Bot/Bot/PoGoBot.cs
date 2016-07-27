@@ -62,11 +62,19 @@ namespace PokemonGo.Haxton.Bot.Bot
         {
             logger.Info("Starting bot.");
 
-            var taskList = new List<Task>();
+            var taskList = new List<Task>
+            {
+                Task
+                    .Run(RecycleItemsTask)
+                    .ContinueWith(t => new Exception("Recycle task unexpectedly exited")),
+                Task
+                    .Run(TransferDuplicatePokemon)
+                    .ContinueWith(t => new Exception("Transfer task unexpectedly exited")),
+                Task
+                    .Run(FarmPokestopsTask)
+                    .ContinueWith(t => new Exception("Farm task unexpectedly exited"))
+            };
 
-            taskList.Add(Task.Run(RecycleItemsTask));
-            taskList.Add(Task.Run(TransferDuplicatePokemon));
-            taskList.Add(Task.Run(FarmPokestopsTask));
             return taskList;
         }
 
