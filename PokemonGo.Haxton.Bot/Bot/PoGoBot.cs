@@ -174,7 +174,7 @@ namespace PokemonGo.Haxton.Bot.Bot
         {
             while (ShouldTransferPokemon)
             {
-                await EvolvePokemonTask();
+                EvolvePokemonTask();
                 var duplicatePokemon = _inventory.GetDuplicatePokemonForTransfer(_settings.KeepPokemonsThatCanEvolve, _settings.PrioritizeIvOverCp, _settings.PokemonsNotToTransfer);
                 foreach (var pokemonData in duplicatePokemon)
                 {
@@ -194,28 +194,24 @@ namespace PokemonGo.Haxton.Bot.Bot
             }
         }
 
-        private async Task EvolvePokemonTask()
+        private void EvolvePokemonTask()
         {
-            while (ShouldEvolvePokemon)
+            if (_settings.UseLuckyEggsWhileEvolving)
             {
-                if (_settings.UseLuckyEggsWhileEvolving)
-                {
-                    logger.Info("Using lucky egg.");
-                    LuckyEgg();
-                }
-                var list = _settings.PokemonsToEvolve;
-                if (_settings.EvolveAllPokemonWithEnoughCandy)
-                {
-                    list = null;
-                }
-                var pokemon = _inventory.GetPokemonToEvolve(list).ToList();
-                pokemon.ForEach(async p =>
-                {
-                    logger.Info($"Evolving pokemon {p.PokemonId} with cp {p.Cp}.");
-                    await _inventory.EvolvePokemon(p.Id);
-                });
-                await Task.Delay(30000);
+                logger.Info("Using lucky egg.");
+                LuckyEgg();
             }
+            var list = _settings.PokemonsToEvolve;
+            if (_settings.EvolveAllPokemonWithEnoughCandy)
+            {
+                list = null;
+            }
+            var pokemon = _inventory.GetPokemonToEvolve(list).ToList();
+            pokemon.ForEach(async p =>
+            {
+                logger.Info($"Evolving pokemon {p.PokemonId} with cp {p.Cp}.");
+                await _inventory.EvolvePokemon(p.Id);
+            });
         }
 
         private async void LuckyEgg()
