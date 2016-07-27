@@ -77,7 +77,7 @@ namespace PokemonGo.Haxton.Bot.Bot
             var returnToStart = DateTime.Now;
             while (true)
             {
-                if (returnToStart.AddMinutes(10) <= DateTime.Now)
+                if (returnToStart.AddMinutes(1) <= DateTime.Now)
                 {
                     _navigation.TeleportToPokestop(firstPokestop);
                     returnToStart = DateTime.Now;
@@ -95,17 +95,21 @@ namespace PokemonGo.Haxton.Bot.Bot
                     i =>
                         LocationUtils.CalculateDistanceInMeters(_navigation.CurrentLatitude,
                             _navigation.CurrentLongitude, i.Latitude, i.Longitude)).First();
+
+                var distance = LocationUtils.CalculateDistanceInMeters(_navigation.CurrentLatitude, _navigation.CurrentLongitude, closestPokestop.Latitude, closestPokestop.Longitude);
+
                 if (firstPokestop == null)
                     firstPokestop = closestPokestop;
+                var fortWithPokemon = (await _map.GetFortWithPokemon());
+                var biggestFort = fortWithPokemon.MaxBy(x => x.GymPoints);
+                if (distance > 100)
+                    closestPokestop = biggestFort;
                 //pokestopList.Remove(closestPokestop);
-
-                //var distance = LocationUtils.CalculateDistanceInMeters(_navigation.CurrentLatitude,
-                //    _navigation.CurrentLongitude, closestPokestop.Latitude, closestPokestop.Longitude);
 
                 //var pokestop =
                 //    await _fort.GetFort(closestPokestop.Id, closestPokestop.Latitude, closestPokestop.Longitude);
 
-                logger.Info("Moving to a pokestop");
+                //logger.Info("Moving to a pokestop");
                 //await
                 //    _navigation.HumanLikeWalking(
                 //        new GeoCoordinate(closestPokestop.Latitude, closestPokestop.Longitude),

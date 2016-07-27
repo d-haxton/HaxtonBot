@@ -1,4 +1,5 @@
-﻿using POGOProtos.Map.Fort;
+﻿using MoreLinq;
+using POGOProtos.Map.Fort;
 using POGOProtos.Map.Pokemon;
 using PokemonGo.Haxton.Bot.ApiProvider;
 using PokemonGo.Haxton.Bot.Utilities;
@@ -16,6 +17,8 @@ namespace PokemonGo.Haxton.Bot.Navigation
         Task<IEnumerable<FortData>> GetPokeStops();
 
         Task<IOrderedEnumerable<MapPokemon>> GetNearbyPokemonClosestFirst();
+
+        Task<IOrderedEnumerable<FortData>> GetFortWithPokemon();
     }
 
     public class PoGoMap : IPoGoMap
@@ -47,6 +50,31 @@ namespace PokemonGo.Haxton.Bot.Navigation
                                 i.Latitude, i.Longitude) < _logicSettings.MaxTravelDistanceInMeters) ||
                         _logicSettings.MaxTravelDistanceInMeters == 0
                 );
+            return pokeStops;
+        }
+
+        public async Task<IOrderedEnumerable<FortData>> GetFortWithPokemon()
+        {
+            var mapObjects = await _map.GetMapObjects();
+            var pokeStops = mapObjects.MapCells
+                .Where(t => t.CatchablePokemons.Count > 0 || t.WildPokemons.Count > 0 || t.Forts.Select(p => p.LureInfo?.ActivePokemonId != null).Any())
+                .OrderByDescending(x => x.CatchablePokemons.Count)
+                .SelectMany(i =>
+                {
+                    i.Forts.ForEach(x => x.GymPoints = i.CatchablePokemons.Count + i.WildPokemons.Count);
+                    return i.Forts;
+                })
+                .Where(
+                    i =>
+                        i.Type == FortType.Checkpoint &&
+                        i.CooldownCompleteTimestampMs < DateTime.UtcNow.ToUnixTime() &&
+                        ( // Make sure PokeStop is within max travel distance, unless it's set to 0.
+                            LocationUtils.CalculateDistanceInMeters(
+                                _settings.DefaultLatitude, _settings.DefaultLongitude,
+                                i.Latitude, i.Longitude) < _logicSettings.MaxTravelDistanceInMeters) ||
+                        _logicSettings.MaxTravelDistanceInMeters == 0
+                )
+                .OrderByDescending(x => x.GymPoints);
             return pokeStops;
         }
 
