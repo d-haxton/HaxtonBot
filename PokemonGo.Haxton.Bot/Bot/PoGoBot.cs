@@ -80,7 +80,8 @@ namespace PokemonGo.Haxton.Bot.Bot
                 var pokestopList = (await _map.GetPokeStops()).Where(t => t.CooldownCompleteTimestampMs < DateTime.UtcNow.ToUnixTime()).ToList();
                 if (!pokestopList.Any())
                 {
-                    logger.Warn("No pokestops found! Are you sure you're not in the middle ocean?");
+                    _navigation.TeleportToPokestop(firstPokestop);
+                    pokestopList = (await _map.GetPokeStops()).Where(t => t.CooldownCompleteTimestampMs < DateTime.UtcNow.ToUnixTime()).ToList();
                 }
                 //while (pokestopList.Any())
                 //{
