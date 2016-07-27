@@ -23,12 +23,12 @@ namespace PokemonGo.Haxton.Bot.Bot
         bool ShouldEvolvePokemon { get; set; }
         bool ShouldTransferPokemon { get; set; }
 
-        void Run();
+        List<Task> Run();
     }
 
     public class PoGoBot : IPoGoBot
     {
-        private static Logger logger = LogManager.GetCurrentClassLogger();
+        private static readonly Logger logger = LogManager.GetCurrentClassLogger();
 
         private DateTime LuckyEggUsed { get; set; }
         private readonly IPoGoNavigation _navigation;
@@ -58,12 +58,16 @@ namespace PokemonGo.Haxton.Bot.Bot
             ShouldRecycleItems = _settings.ItemRecycleFilter.Count > 0;
         }
 
-        public void Run()
+        public List<Task> Run()
         {
             logger.Info("Starting bot.");
-            Task.Run(RecycleItemsTask);
-            Task.Run(TransferDuplicatePokemon);
-            Task.Run(FarmPokestopsTask);
+
+            var taskList = new List<Task>();
+
+            taskList.Add(Task.Run(RecycleItemsTask));
+            taskList.Add(Task.Run(TransferDuplicatePokemon));
+            taskList.Add(Task.Run(FarmPokestopsTask));
+            return taskList;
         }
 
         private async Task FarmPokestopsTask()
@@ -73,7 +77,7 @@ namespace PokemonGo.Haxton.Bot.Bot
             var returnToStart = DateTime.Now;
             while (true)
             {
-                if (returnToStart.AddMinutes(6) <= DateTime.Now)
+                if (returnToStart.AddMinutes(10) <= DateTime.Now)
                 {
                     _navigation.TeleportToPokestop(firstPokestop);
                     returnToStart = DateTime.Now;

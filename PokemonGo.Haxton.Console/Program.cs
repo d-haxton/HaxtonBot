@@ -5,7 +5,9 @@ using PokemonGo.Haxton.Bot.Bot;
 using PokemonGo.Haxton.Bot.Inventory;
 using PokemonGo.Haxton.Bot.Login;
 using PokemonGo.Haxton.Bot.Navigation;
+using PokemonGo.Haxton.Bot.Settings;
 using PokemonGo.Haxton.Bot.Utilities;
+using PokemonGo.RocketAPI;
 using StructureMap;
 using System;
 using System.Collections.Generic;
@@ -18,6 +20,7 @@ namespace PokemonGo.Haxton.Console
     internal class Program
     {
         private static Container container;
+        private static readonly Logger logger = LogManager.GetCurrentClassLogger();
 
         private static void Main(string[] args)
         {
@@ -39,6 +42,10 @@ namespace PokemonGo.Haxton.Console
                 _.For<IPoGoEncounter>().Use<PoGoEncounter>().Singleton();
                 _.For<IPoGoNavigation>().Use<PoGoNavigation>().Singleton();
                 _.For<IPoGoMap>().Use<PoGoMap>().Singleton();
+                _.For<IPoGoStatistics>().Use<PoGoStatistics>().Singleton();
+
+                _.For<ISettings>().Use<Settings>().Singleton();
+                _.For<ILogicSettings>().Use<LogicSettings>().Singleton();
 
                 _.Scan(s =>
                 {
@@ -47,11 +54,25 @@ namespace PokemonGo.Haxton.Console
                     s.WithDefaultConventions();
                 });
             });
-            var login = container.GetInstance<IPoGoLogin>();
-            login.DoLogin();
-            var bot = container.GetInstance<IPoGoBot>();
-            Task.Run(() => bot.Run());
-            Task.Run(UpdateConsole);
+            Task.Run(() =>
+            {
+                while (true)
+                {
+                    try
+                    {
+                        var login = container.GetInstance<IPoGoLogin>();
+                        login.DoLogin();
+                        var bot = container.GetInstance<IPoGoBot>();
+                        var task = bot.Run();
+                        Task.Run(UpdateConsole);
+                        Task.WaitAll(task.ToArray());
+                    }
+                    catch (Exception ex)
+                    {
+                        logger.Fatal(ex, "Fatal error, attempting to restart");
+                    }
+                }
+            });
             System.Console.ReadLine();
         }
 
