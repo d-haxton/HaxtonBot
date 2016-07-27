@@ -1,4 +1,5 @@
-﻿using POGOProtos.Networking.Responses;
+﻿using POGOProtos.Map.Fort;
+using POGOProtos.Networking.Responses;
 using PokemonGo.Haxton.Bot.ApiProvider;
 using PokemonGo.Haxton.Bot.Utilities;
 using System;
@@ -17,6 +18,8 @@ namespace PokemonGo.Haxton.Bot.Navigation
 
         Task<PlayerUpdateResponse> HumanPathWalking(GpxReader.Trkpt trk,
             double walkingSpeedInKilometersPerHour, Action functionExecutedWhileWalking);
+
+        void TeleportToPokestop(FortData closestPokestop);
     }
 
     public class PoGoNavigation : IPoGoNavigation
@@ -92,7 +95,7 @@ namespace PokemonGo.Haxton.Bot.Navigation
                             _client.Settings.DefaultAltitude);
 
                 //if (result.WildPokemons.Count > 0)
-                    functionExecutedWhileWalking?.Invoke(); // look for pokemon
+                functionExecutedWhileWalking?.Invoke(); // look for pokemon
 
                 if (_logicSettings.Teleport == false)
                     await Task.Delay(Math.Min((int)(currentDistanceToTarget / speedInMetersPerSecond * 1000), 1500));
@@ -160,6 +163,11 @@ namespace PokemonGo.Haxton.Bot.Navigation
             } while (LocationUtils.CalculateDistanceInMeters(sourceLocation, targetLocation) >= 30);
 
             return result;
+        }
+
+        public void TeleportToPokestop(FortData closestPokestop)
+        {
+            _player.UpdatePlayerLocation(closestPokestop.Latitude, closestPokestop.Longitude, 10);
         }
     }
 }

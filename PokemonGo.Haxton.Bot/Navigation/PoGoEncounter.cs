@@ -1,4 +1,5 @@
 ﻿using NLog;
+using POGOProtos.Enums;
 using POGOProtos.Inventory.Item;
 using POGOProtos.Map.Pokemon;
 using POGOProtos.Networking.Responses;
@@ -16,6 +17,10 @@ namespace PokemonGo.Haxton.Bot.Navigation
         Task<EncounterResponse> EncounterPokemonAsync(MapPokemon pokemon);
 
         Task CatchPokemon(EncounterResponse encounter, MapPokemon pokemon);
+
+        Task<DiskEncounterResponse> EncounterPokemonLure(ulong encounterId, string spawnPointGuid);
+
+        Task CatchPokemon(ulong encounterId, string id, DiskEncounterResponse encounter, PokemonId pokemonId);
     }
 
     public class PoGoEncounter : IPoGoEncounter
@@ -39,6 +44,27 @@ namespace PokemonGo.Haxton.Bot.Navigation
         {
             var encounter = await _apiEncounter.EncounterPokemon(pokemon.EncounterId, pokemon.SpawnPointId);
             return encounter;
+        }
+
+        public async Task<DiskEncounterResponse> EncounterPokemonLure(ulong encounterId, string fortId)
+        {
+            return await _apiEncounter.EncounterLurePokemon(encounterId, fortId);
+        }
+
+        public async Task CatchPokemon(ulong encounterId, string id, DiskEncounterResponse encounter, PokemonId pokemonId)
+        {
+            CatchPokemonResponse caughtPokemonResponse;
+            var attempts = 0;
+            do
+            {
+                var probability = encounter?.CaptureProbability?.CaptureProbability_?.FirstOrDefault();
+                var pokeball = GetPokeball(encounter);
+                caughtPokemonResponse =
+                    await _apiEncounter.CatchPokemon(encounterId, id, pokeball);
+                logger.Info($"[{caughtPokemonResponse.Status} - {attempts}] {pokemonId} encountered. {PokemonInfo.CalculatePokemonPerfection(encounter?.PokemonData)}% perfect. {encounter?.PokemonData?.Cp} CP. Probabilty: {probability}");
+                attempts++;
+            } while (caughtPokemonResponse.Status == CatchPokemonResponse.Types.CatchStatus.CatchMissed ||
+                     caughtPokemonResponse.Status == CatchPokemonResponse.Types.CatchStatus.CatchEscape);
         }
 
         public async Task CatchPokemon(EncounterResponse encounter, MapPokemon pokemon)
@@ -93,6 +119,45 @@ namespace PokemonGo.Haxton.Bot.Navigation
         {
             var pokemonCp = encounter?.WildPokemon?.PokemonData?.Cp;
             var iV = Math.Round(PokemonInfo.CalculatePokemonPerfection(encounter?.WildPokemon?.PokemonData));
+            var proba = encounter?.CaptureProbability?.CaptureProbability_.First();
+
+            var pokeBallsCount = _inventory.GetItemAmountByType(ItemId.ItemPokeBall);
+            var greatBallsCount = _inventory.GetItemAmountByType(ItemId.ItemGreatBall);
+            var ultraBallsCount = _inventory.GetItemAmountByType(ItemId.ItemUltraBall);
+            var masterBallsCount = _inventory.GetItemAmountByType(ItemId.ItemMasterBall);
+
+            if (masterBallsCount > 0 && pokemonCp >= 1200)
+                return ItemId.ItemMasterBall;
+            if (ultraBallsCount > 0 && pokemonCp >= 1000)
+                return ItemId.ItemUltraBall;
+            if (greatBallsCount > 0 && pokemonCp >= 750)
+                return ItemId.ItemGreatBall;
+
+            if (ultraBallsCount > 0 && iV >= _logicSettings.KeepMinIvPercentage && proba < 0.40)
+                return ItemId.ItemUltraBall;
+
+            if (greatBallsCount > 0 && iV >= _logicSettings.KeepMinIvPercentage && proba < 0.50)
+                return ItemId.ItemGreatBall;
+
+            if (greatBallsCount > 0 && pokemonCp >= 300)
+                return ItemId.ItemGreatBall;
+
+            if (pokeBallsCount > 0)
+                return ItemId.ItemPokeBall;
+            if (greatBallsCount > 0)
+                return ItemId.ItemGreatBall;
+            if (ultraBallsCount > 0)
+                return ItemId.ItemUltraBall;
+            if (masterBallsCount > 0)
+                return ItemId.ItemMasterBall;
+
+            return ItemId.ItemUnknown;
+        }
+
+        private ItemId GetPokeball(DiskEncounterResponse encounter)
+        {
+            var pokemonCp = encounter?.PokemonData?.Cp;
+            var iV = Math.Round(PokemonInfo.CalculatePokemonPerfection(encounter?.PokemonData));
             var proba = encounter?.CaptureProbability?.CaptureProbability_.First();
 
             var pokeBallsCount = _inventory.GetItemAmountByType(ItemId.ItemPokeBall);
