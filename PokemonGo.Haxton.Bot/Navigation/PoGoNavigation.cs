@@ -71,7 +71,7 @@ namespace PokemonGo.Haxton.Bot.Navigation
                 sourceLocation = new GeoCoordinate(_client.CurrentLatitude, _client.CurrentLongitude);
                 var currentDistanceToTarget = LocationUtils.CalculateDistanceInMeters(sourceLocation, targetLocation);
 
-                if (currentDistanceToTarget < 40)
+                if (currentDistanceToTarget < 15)
                 {
                     if (speedInMetersPerSecond > SpeedDownTo)
                     {
@@ -91,11 +91,12 @@ namespace PokemonGo.Haxton.Bot.Navigation
                         _player.UpdatePlayerLocation(waypoint.Latitude, waypoint.Longitude,
                             _client.Settings.DefaultAltitude);
 
-                functionExecutedWhileWalking?.Invoke(); // look for pokemon
+                //if (result.WildPokemons.Count > 0)
+                    functionExecutedWhileWalking?.Invoke(); // look for pokemon
 
                 if (_logicSettings.Teleport == false)
-                    await Task.Delay(Math.Min((int)(distanceToTarget / speedInMetersPerSecond * 1000), 3000));
-            } while (LocationUtils.CalculateDistanceInMeters(sourceLocation, targetLocation) >= 30);
+                    await Task.Delay(Math.Min((int)(currentDistanceToTarget / speedInMetersPerSecond * 1000), 1500));
+            } while (LocationUtils.CalculateDistanceInMeters(sourceLocation, targetLocation) >= 10);
 
             return result;
         }

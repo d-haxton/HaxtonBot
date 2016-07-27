@@ -1,10 +1,12 @@
-﻿using NLog;
+﻿using MoreLinq;
+using NLog;
 using POGOProtos.Inventory.Item;
 using POGOProtos.Networking.Responses;
 using PokemonGo.Haxton.Bot.Inventory;
 using PokemonGo.Haxton.Bot.Navigation;
 using PokemonGo.Haxton.Bot.Utilities;
 using System;
+using System.Collections.Generic;
 using System.Device.Location;
 using System.Linq;
 using System.Threading.Tasks;
@@ -100,18 +102,29 @@ namespace PokemonGo.Haxton.Bot.Bot
                         //_stats.ExperienceSinceStarted += pokestopBooty.ExperienceAwarded;
                         //_stats.
                     }
+                    else
+                    {
+                        while (pokestopBooty.Result == FortSearchResponse.Types.Result.Success)
+                        {
+                            pokestopBooty =
+                                await
+                                    _fort.SearchFort(closestPokestop.Id, closestPokestop.Latitude,
+                                        closestPokestop.Longitude);
+                        }
+                    }
 
-                    await Task.Delay(1000);
+                    await Task.Delay(100);
                 }
             }
         }
 
-        private void CatchNearbyPokemon()
+        private async void CatchNearbyPokemon()
         {
-            var pokemon = _map.GetNearbyPokemonClosestFirst().GetAwaiter().GetResult();
+            var tasks = new List<Task>();
+            var pokemon = _map.GetNearbyPokemonClosestFirst().GetAwaiter().GetResult().DistinctBy(i => i.SpawnPointId).ToList();
             if (pokemon.Any())
             {
-                var pokemonList = string.Join(",", pokemon.Select(x => x.PokemonId).ToArray());
+                var pokemonList = string.Join(", ", pokemon.Select(x => x.PokemonId).ToArray());
                 logger.Info($"{pokemon.Count()} Pokemon found: {pokemonList}");
             }
             foreach (var mapPokemon in pokemon)
@@ -122,10 +135,10 @@ namespace PokemonGo.Haxton.Bot.Bot
                 {
                     continue;
                 }
-                Task.Run(async () =>
+                tasks.Add(Task.Run(async () =>
                 {
                     //var distance = LocationUtils.CalculateDistanceInMeters(_navigation.CurrentLatitude, _navigation.CurrentLongitude, mapPokemon.Latitude, mapPokemon.Longitude);
-                    await Task.Delay(500);
+                    await Task.Delay(100);
                     var encounter = await _encounter.EncounterPokemonAsync(mapPokemon);
                     if (encounter.Status == EncounterResponse.Types.Status.EncounterSuccess)
                     {
@@ -136,12 +149,13 @@ namespace PokemonGo.Haxton.Bot.Bot
                         if (encounter.Status != EncounterResponse.Types.Status.EncounterAlreadyHappened)
                             logger.Warn($"Unable to catch pokemon. Reason: {encounter.Status}");
                     }
-                    if (!Equals(pokemon.Last(), mapPokemon))
-                    {
-                        await Task.Delay(_settings.DelayBetweenPokemonCatch);
-                    }
-                });
+                }));
+                if (!Equals(pokemon.Last(), mapPokemon))
+                {
+                    await Task.Delay(_settings.DelayBetweenPokemonCatch);
+                }
             }
+            Task.WaitAll(tasks.ToArray());
         }
 
         private async Task TransferDuplicatePokemon()

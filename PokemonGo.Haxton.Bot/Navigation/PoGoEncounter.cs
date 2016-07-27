@@ -86,7 +86,7 @@ namespace PokemonGo.Haxton.Bot.Navigation
             await _apiEncounter.UseCaptureItem(encounterId, ItemId.ItemRazzBerry, spawnPointId);
             berry.Count -= 1;
 
-            await Task.Delay(1500);
+            await Task.Delay(100);
         }
 
         private ItemId GetPokeball(EncounterResponse encounter)
