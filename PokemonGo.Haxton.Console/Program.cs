@@ -64,6 +64,8 @@ namespace PokemonGo.Haxton.Console
                         login.DoLogin();
                         var bot = container.GetInstance<IPoGoBot>();
                         var task = bot.Run();
+                        task.ForEach(x => x.ContinueWith(
+                            (t) => { throw new Exception("Main thread restarting due to lower task exception"); }));
                         Task.Run(UpdateConsole);
                         Task.WaitAll(task.ToArray());
                     }
