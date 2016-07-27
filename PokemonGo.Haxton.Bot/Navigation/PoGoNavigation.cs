@@ -167,6 +167,8 @@ namespace PokemonGo.Haxton.Bot.Navigation
 
         public async Task TeleportToPokestop(FortData closestPokestop)
         {
+            if (closestPokestop?.Latitude == null)
+                return;
             await _player.UpdatePlayerLocation(closestPokestop.Latitude, closestPokestop.Longitude, 10);
         }
     }

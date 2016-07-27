@@ -118,8 +118,8 @@ namespace PokemonGo.Haxton.Bot.Bot
                         firstPokestop = closestPokestop;
                     var fortWithPokemon = (await _map.GetFortWithPokemon());
                     var biggestFort = fortWithPokemon.MaxBy(x => x.GymPoints);
-                    //if (distance > 100)
-                    //    closestPokestop = biggestFort;
+                    if (distance > 100)
+                        closestPokestop = biggestFort;
 
                     await _navigation.TeleportToPokestop(closestPokestop);
                 }
@@ -161,7 +161,7 @@ namespace PokemonGo.Haxton.Bot.Bot
                 }
                 await CatchNearbyPokemon(closestPokestop);
 
-                //await Task.Delay(100);
+                await Task.Delay(100);
                 //}
             }
         }
