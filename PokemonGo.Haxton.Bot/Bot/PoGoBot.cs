@@ -62,7 +62,6 @@ namespace PokemonGo.Haxton.Bot.Bot
         {
             logger.Info("Starting bot.");
             Task.Run(RecycleItemsTask);
-            Task.Run(EvolvePokemonTask);
             Task.Run(TransferDuplicatePokemon);
             Task.Run(FarmPokestopsTask);
         }
@@ -175,6 +174,7 @@ namespace PokemonGo.Haxton.Bot.Bot
         {
             while (ShouldTransferPokemon)
             {
+                await EvolvePokemonTask();
                 var duplicatePokemon = _inventory.GetDuplicatePokemonForTransfer(_settings.KeepPokemonsThatCanEvolve, _settings.PrioritizeIvOverCp, _settings.PokemonsNotToTransfer);
                 foreach (var pokemonData in duplicatePokemon)
                 {
@@ -203,7 +203,12 @@ namespace PokemonGo.Haxton.Bot.Bot
                     logger.Info("Using lucky egg.");
                     LuckyEgg();
                 }
-                var pokemon = _inventory.GetPokemonToEvolve(_settings.PokemonsToEvolve).ToList();
+                var list = _settings.PokemonsToEvolve;
+                if (_settings.EvolveAllPokemonWithEnoughCandy)
+                {
+                    list = null;
+                }
+                var pokemon = _inventory.GetPokemonToEvolve(list).ToList();
                 pokemon.ForEach(async p =>
                 {
                     logger.Info($"Evolving pokemon {p.PokemonId} with cp {p.Cp}.");
