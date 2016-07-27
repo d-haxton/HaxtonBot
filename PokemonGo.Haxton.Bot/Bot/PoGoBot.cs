@@ -111,15 +111,15 @@ namespace PokemonGo.Haxton.Bot.Bot
 
                 if (_settings.Teleport)
                 {
-                    var distance = LocationUtils.CalculateDistanceInMeters(_navigation.CurrentLatitude,
-                        _navigation.CurrentLongitude, closestPokestop.Latitude, closestPokestop.Longitude);
+                    //var distance = LocationUtils.CalculateDistanceInMeters(_navigation.CurrentLatitude,
+                    //_navigation.CurrentLongitude, closestPokestop.Latitude, closestPokestop.Longitude);
 
                     if (firstPokestop == null)
                         firstPokestop = closestPokestop;
-                    var fortWithPokemon = (await _map.GetFortWithPokemon());
-                    var biggestFort = fortWithPokemon.MaxBy(x => x.GymPoints);
-                    if (distance > 100)
-                        closestPokestop = biggestFort;
+                    //var fortWithPokemon = (await _map.GetFortWithPokemon());
+                    //var biggestFort = fortWithPokemon.MaxBy(x => x.GymPoints);
+                    //if (distance > 100)
+                    //    closestPokestop = biggestFort;
 
                     await _navigation.TeleportToPokestop(closestPokestop);
                 }
