@@ -85,45 +85,53 @@ namespace PokemonGo.Haxton.Bot.Bot
             var returnToStart = DateTime.Now;
             while (true)
             {
-                if (returnToStart.AddMinutes(1) <= DateTime.Now)
+                if (returnToStart.AddMinutes(5) <= DateTime.Now)
                 {
-                    _navigation.TeleportToPokestop(firstPokestop);
+                    await _navigation.TeleportToPokestop(firstPokestop);
                     returnToStart = DateTime.Now;
                 }
                 var pokestopList = (await _map.GetPokeStops()).Where(t => t.CooldownCompleteTimestampMs < DateTime.UtcNow.ToUnixTime()).ToList();
                 if (!pokestopList.Any())
                 {
-                    _navigation.TeleportToPokestop(firstPokestop);
+                    await _navigation.TeleportToPokestop(firstPokestop);
                     pokestopList = (await _map.GetPokeStops()).Where(t => t.CooldownCompleteTimestampMs < DateTime.UtcNow.ToUnixTime()).ToList();
                 }
                 //while (pokestopList.Any())
                 //{
-                logger.Info($"Found {pokestopList.Count} pokestops.");
+                //logger.Info($"Found {pokestopList.Count} pokestops.");
                 var closestPokestop = pokestopList.OrderBy(
                     i =>
                         LocationUtils.CalculateDistanceInMeters(_navigation.CurrentLatitude,
                             _navigation.CurrentLongitude, i.Latitude, i.Longitude)).First();
 
-                var distance = LocationUtils.CalculateDistanceInMeters(_navigation.CurrentLatitude, _navigation.CurrentLongitude, closestPokestop.Latitude, closestPokestop.Longitude);
+                if (_settings.Teleport)
+                {
+                    var distance = LocationUtils.CalculateDistanceInMeters(_navigation.CurrentLatitude,
+                        _navigation.CurrentLongitude, closestPokestop.Latitude, closestPokestop.Longitude);
 
-                if (firstPokestop == null)
-                    firstPokestop = closestPokestop;
-                var fortWithPokemon = (await _map.GetFortWithPokemon());
-                var biggestFort = fortWithPokemon.MaxBy(x => x.GymPoints);
-                if (distance > 100)
-                    closestPokestop = biggestFort;
-                //pokestopList.Remove(closestPokestop);
+                    if (firstPokestop == null)
+                        firstPokestop = closestPokestop;
+                    var fortWithPokemon = (await _map.GetFortWithPokemon());
+                    var biggestFort = fortWithPokemon.MaxBy(x => x.GymPoints);
+                    if (distance > 100)
+                        closestPokestop = biggestFort;
 
-                //var pokestop =
-                //    await _fort.GetFort(closestPokestop.Id, closestPokestop.Latitude, closestPokestop.Longitude);
+                    await _navigation.TeleportToPokestop(closestPokestop);
+                }
+                else
+                {
+                    //                var pokestop =
+                    //await _fort.GetFort(closestPokestop.Id, closestPokestop.Latitude, closestPokestop.Longitude);
+                    //                await
+                    await _navigation.HumanLikeWalking(new GeoCoordinate(closestPokestop.Latitude, closestPokestop.Longitude), _settings.WalkingSpeedInKilometerPerHour,
+                        async () =>
+                        {
+                            await CatchNearbyPokemon(closestPokestop);
+                        });
+                }
 
                 //logger.Info("Moving to a pokestop");
-                //await
-                //    _navigation.HumanLikeWalking(
-                //        new GeoCoordinate(closestPokestop.Latitude, closestPokestop.Longitude),
-                //        _settings.WalkingSpeedInKilometerPerHour, CatchNearbyPokemon);
 
-                _navigation.TeleportToPokestop(closestPokestop);
                 var pokestopBooty = await _fort.SearchFort(closestPokestop.Id, closestPokestop.Latitude, closestPokestop.Longitude);
                 if (pokestopBooty.ExperienceAwarded > 0)
                 {

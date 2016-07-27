@@ -19,7 +19,7 @@ namespace PokemonGo.Haxton.Bot.Navigation
         Task<PlayerUpdateResponse> HumanPathWalking(GpxReader.Trkpt trk,
             double walkingSpeedInKilometersPerHour, Action functionExecutedWhileWalking);
 
-        void TeleportToPokestop(FortData closestPokestop);
+        Task TeleportToPokestop(FortData closestPokestop);
     }
 
     public class PoGoNavigation : IPoGoNavigation
@@ -165,9 +165,9 @@ namespace PokemonGo.Haxton.Bot.Navigation
             return result;
         }
 
-        public void TeleportToPokestop(FortData closestPokestop)
+        public async Task TeleportToPokestop(FortData closestPokestop)
         {
-            _player.UpdatePlayerLocation(closestPokestop.Latitude, closestPokestop.Longitude, 10);
+            await _player.UpdatePlayerLocation(closestPokestop.Latitude, closestPokestop.Longitude, 10);
         }
     }
 }
