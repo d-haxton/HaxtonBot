@@ -4,11 +4,6 @@ using POGOProtos.Enums;
 using POGOProtos.Networking.Requests;
 using POGOProtos.Networking.Requests.Messages;
 using POGOProtos.Networking.Responses;
-using PokemonGo.RocketAPI.Helpers;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 
 namespace PokemonGo.Haxton.Bot.ApiProvider

@@ -5,9 +5,6 @@ using POGOProtos.Networking.Responses;
 using PokemonGo.RocketAPI.Extensions;
 using PokemonGo.RocketAPI.Helpers;
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 
 namespace PokemonGo.Haxton.Bot.ApiProvider

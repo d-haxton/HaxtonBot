@@ -5,7 +5,7 @@ using System.Collections.Generic;
 using System.Configuration;
 using System.IO;
 
-namespace PokemonGo.Haxton.Bot
+namespace PokemonGo.Haxton.Bot.Settings
 {
     public class LogicSettings : ILogicSettings
     {

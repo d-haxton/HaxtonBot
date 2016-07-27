@@ -4,17 +4,13 @@ using POGOProtos.Data.Player;
 using POGOProtos.Enums;
 using POGOProtos.Inventory;
 using POGOProtos.Inventory.Item;
-using POGOProtos.Networking.Requests;
-using POGOProtos.Networking.Requests.Messages;
 using POGOProtos.Networking.Responses;
 using POGOProtos.Settings.Master;
 using PokemonGo.Haxton.Bot.ApiProvider;
 using PokemonGo.Haxton.Bot.Utilities;
-using PokemonGo.RocketAPI;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 
 namespace PokemonGo.Haxton.Bot.Inventory
@@ -278,7 +274,7 @@ namespace PokemonGo.Haxton.Bot.Inventory
 
                 var pokemonCandyNeededAlready =
                     pokemonToEvolve.Count(
-                        p => PokemonSettings.Single(x => x.PokemonId == p.PokemonId).FamilyId == settings.FamilyId) *
+                        p => PokemonSettings.Where(t => t != null).Single(x => x.PokemonId == p.PokemonId).FamilyId == settings.FamilyId) *
                     settings.CandyToEvolve;
 
                 if (_logicSettings.EvolveAllPokemonAboveIv)

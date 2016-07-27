@@ -1,20 +1,12 @@
 ﻿using NLog;
 using POGOProtos.Inventory.Item;
-using POGOProtos.Map.Fort;
 using POGOProtos.Networking.Responses;
 using PokemonGo.Haxton.Bot.Inventory;
 using PokemonGo.Haxton.Bot.Navigation;
 using PokemonGo.Haxton.Bot.Utilities;
-using PokemonGo.RocketAPI;
-using PokemonGo.RocketAPI.Extensions;
 using System;
-using System.Collections.Generic;
 using System.Device.Location;
 using System.Linq;
-using System.Runtime.InteropServices;
-using System.Runtime.Remoting.Contexts;
-using System.Text;
-using System.Threading;
 using System.Threading.Tasks;
 
 namespace PokemonGo.Haxton.Bot.Bot

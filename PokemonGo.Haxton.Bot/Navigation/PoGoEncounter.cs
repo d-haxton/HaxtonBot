@@ -1,5 +1,4 @@
 ﻿using NLog;
-using POGOProtos.Data;
 using POGOProtos.Inventory.Item;
 using POGOProtos.Map.Pokemon;
 using POGOProtos.Networking.Responses;
@@ -7,10 +6,7 @@ using PokemonGo.Haxton.Bot.ApiProvider;
 using PokemonGo.Haxton.Bot.Inventory;
 using PokemonGo.Haxton.Bot.Utilities;
 using System;
-using System.Collections.Generic;
 using System.Linq;
-using System.Runtime.Remoting.Contexts;
-using System.Text;
 using System.Threading.Tasks;
 
 namespace PokemonGo.Haxton.Bot.Navigation

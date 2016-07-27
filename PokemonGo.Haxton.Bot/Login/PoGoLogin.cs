@@ -1,13 +1,7 @@
 ﻿using NLog;
 using PokemonGo.Haxton.Bot.ApiProvider;
-using PokemonGo.RocketAPI;
 using PokemonGo.RocketAPI.Enums;
-using PokemonGo.RocketAPI.Rpc;
-using System;
-using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 
 namespace PokemonGo.Haxton.Bot.Login

@@ -2,11 +2,8 @@
 using PokemonGo.Haxton.Bot.ApiProvider;
 using PokemonGo.Haxton.Bot.Utilities;
 using System;
-using System.Collections.Generic;
 using System.Device.Location;
 using System.Globalization;
-using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 
 namespace PokemonGo.Haxton.Bot.Navigation

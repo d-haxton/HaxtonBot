@@ -1,14 +1,11 @@
 ﻿using Google.Protobuf;
-using NLog;
 using POGOProtos.Networking.Requests;
 using POGOProtos.Networking.Requests.Messages;
 using PokemonGo.RocketAPI;
 using PokemonGo.RocketAPI.Enums;
 using PokemonGo.RocketAPI.Exceptions;
 using PokemonGo.RocketAPI.Extensions;
-using PokemonGo.RocketAPI.Helpers;
 using PokemonGo.RocketAPI.Login;
-using PokemonGo.RocketAPI.Rpc;
 using System;
 using System.Threading.Tasks;
 
