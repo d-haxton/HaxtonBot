@@ -28,7 +28,6 @@ namespace PokemonGo.Haxton.Bot.Bot
         private readonly IPoGoNavigation _navigation;
         private readonly IPoGoInventory _inventory;
         private readonly IPoGoEncounter _encounter;
-        private readonly IPoGoStatistics _stats;
         private readonly IPoGoFort _fort;
         private readonly IPoGoMap _map;
         private readonly ILogicSettings _settings;
@@ -37,12 +36,11 @@ namespace PokemonGo.Haxton.Bot.Bot
         public bool ShouldEvolvePokemon { get; set; }
         public bool ShouldTransferPokemon { get; set; }
 
-        public PoGoBot(IPoGoNavigation navigation, IPoGoInventory inventory, IPoGoEncounter encounter, IPoGoStatistics stats, IPoGoFort fort, IPoGoMap map, ILogicSettings settings)
+        public PoGoBot(IPoGoNavigation navigation, IPoGoInventory inventory, IPoGoEncounter encounter, IPoGoFort fort, IPoGoMap map, ILogicSettings settings)
         {
             _navigation = navigation;
             _inventory = inventory;
             _encounter = encounter;
-            _stats = stats;
             _fort = fort;
             _map = map;
             _settings = settings;
@@ -65,44 +63,52 @@ namespace PokemonGo.Haxton.Bot.Bot
 
         private async Task FarmPokestopsTask()
         {
-            var pokestopList = (await _map.GetPokeStops()).ToList();
-            var numberOfPokestopsVisited = 0;
-            if (!pokestopList.Any())
+            while (true)
             {
-                logger.Warn("No pokestops found! Are you sure you're not in the middle ocean?");
-            }
-            while (pokestopList.Any())
-            {
-                logger.Info($"Found {pokestopList.Count} pokestops.");
-                var closestPokestop = pokestopList.OrderBy(
-                    i =>
-                        LocationUtils.CalculateDistanceInMeters(_navigation.CurrentLatitude,
-                            _navigation.CurrentLongitude, i.Latitude, i.Longitude)).First();
-                pokestopList.Remove(closestPokestop);
-
-                var distance = LocationUtils.CalculateDistanceInMeters(_navigation.CurrentLatitude,
-                                    _navigation.CurrentLongitude, closestPokestop.Latitude, closestPokestop.Longitude);
-                var pokestop = await _fort.GetFort(closestPokestop.Id, closestPokestop.Latitude, closestPokestop.Longitude);
-
-                logger.Info($"Moving to {pokestop.Name}, {Math.Round(distance)}m away.");
-                await _navigation.HumanLikeWalking(new GeoCoordinate(closestPokestop.Latitude, closestPokestop.Longitude),
-                    _settings.WalkingSpeedInKilometerPerHour, CatchNearbyPokemon);
-
-                var pokestopBooty = await _fort.SearchFort(closestPokestop.Id, closestPokestop.Latitude, closestPokestop.Longitude);
-                if (pokestopBooty.ExperienceAwarded > 0)
+                var pokestopList = (await _map.GetPokeStops()).ToList();
+                var numberOfPokestopsVisited = 0;
+                if (!pokestopList.Any())
                 {
-                    logger.Info($"[{numberOfPokestopsVisited++}] {pokestop.Name} rewarded us with {pokestopBooty.ExperienceAwarded} exp. {pokestopBooty.GemsAwarded} gems. {StringUtils.GetSummedFriendlyNameOfItemAwardList(pokestopBooty.ItemsAwarded)}.");
-                    //_stats.ExperienceSinceStarted += pokestopBooty.ExperienceAwarded;
-                    //_stats.
+                    logger.Warn("No pokestops found! Are you sure you're not in the middle ocean?");
                 }
+                while (pokestopList.Any())
+                {
+                    logger.Info($"Found {pokestopList.Count} pokestops.");
+                    var closestPokestop = pokestopList.OrderBy(
+                        i =>
+                            LocationUtils.CalculateDistanceInMeters(_navigation.CurrentLatitude,
+                                _navigation.CurrentLongitude, i.Latitude, i.Longitude)).First();
+                    pokestopList.Remove(closestPokestop);
 
-                await Task.Delay(1000);
+                    var distance = LocationUtils.CalculateDistanceInMeters(_navigation.CurrentLatitude,
+                        _navigation.CurrentLongitude, closestPokestop.Latitude, closestPokestop.Longitude);
+                    var pokestop =
+                        await _fort.GetFort(closestPokestop.Id, closestPokestop.Latitude, closestPokestop.Longitude);
+
+                    logger.Info($"Moving to {pokestop.Name}, {Math.Round(distance)}m away.");
+                    await
+                        _navigation.HumanLikeWalking(
+                            new GeoCoordinate(closestPokestop.Latitude, closestPokestop.Longitude),
+                            _settings.WalkingSpeedInKilometerPerHour, CatchNearbyPokemon);
+
+                    var pokestopBooty =
+                        await _fort.SearchFort(closestPokestop.Id, closestPokestop.Latitude, closestPokestop.Longitude);
+                    if (pokestopBooty.ExperienceAwarded > 0)
+                    {
+                        logger.Info(
+                            $"[{numberOfPokestopsVisited++}] {pokestop.Name} rewarded us with {pokestopBooty.ExperienceAwarded} exp. {pokestopBooty.GemsAwarded} gems. {StringUtils.GetSummedFriendlyNameOfItemAwardList(pokestopBooty.ItemsAwarded)}.");
+                        //_stats.ExperienceSinceStarted += pokestopBooty.ExperienceAwarded;
+                        //_stats.
+                    }
+
+                    await Task.Delay(1000);
+                }
             }
         }
 
-        private async void CatchNearbyPokemon()
+        private void CatchNearbyPokemon()
         {
-            var pokemon = await _map.GetNearbyPokemonClosestFirst();
+            var pokemon = _map.GetNearbyPokemonClosestFirst().GetAwaiter().GetResult();
             if (pokemon.Any())
             {
                 var pokemonList = string.Join(",", pokemon.Select(x => x.PokemonId).ToArray());
@@ -111,26 +117,30 @@ namespace PokemonGo.Haxton.Bot.Bot
             foreach (var mapPokemon in pokemon)
             {
                 //logger.Info($"Found {pokemon.Count()} pokemon in your area.");
-                if (_settings.UsePokemonToNotCatchFilter && _settings.PokemonsNotToCatch.Contains(mapPokemon.PokemonId))
+                if (_settings.UsePokemonToNotCatchFilter &&
+                    _settings.PokemonsNotToCatch.Contains(mapPokemon.PokemonId))
                 {
                     continue;
                 }
-                var distance = LocationUtils.CalculateDistanceInMeters(_navigation.CurrentLatitude, _navigation.CurrentLongitude, mapPokemon.Latitude, mapPokemon.Longitude);
-                await Task.Delay(distance > 100 ? 15000 : 500);
-                var encounter = await _encounter.EncounterPokemonAsync(mapPokemon);
-                if (encounter.Status == EncounterResponse.Types.Status.EncounterSuccess)
+                Task.Run(async () =>
                 {
-                    await _encounter.CatchPokemon(encounter, mapPokemon);
-                }
-                else
-                {
-                    if (encounter.Status != EncounterResponse.Types.Status.EncounterAlreadyHappened)
-                        logger.Warn($"Unable to catch pokemon. Reason: {encounter.Status}");
-                }
-                if (!Equals(pokemon.Last(), mapPokemon))
-                {
-                    await Task.Delay(_settings.DelayBetweenPokemonCatch);
-                }
+                    //var distance = LocationUtils.CalculateDistanceInMeters(_navigation.CurrentLatitude, _navigation.CurrentLongitude, mapPokemon.Latitude, mapPokemon.Longitude);
+                    await Task.Delay(500);
+                    var encounter = await _encounter.EncounterPokemonAsync(mapPokemon);
+                    if (encounter.Status == EncounterResponse.Types.Status.EncounterSuccess)
+                    {
+                        await _encounter.CatchPokemon(encounter, mapPokemon);
+                    }
+                    else
+                    {
+                        if (encounter.Status != EncounterResponse.Types.Status.EncounterAlreadyHappened)
+                            logger.Warn($"Unable to catch pokemon. Reason: {encounter.Status}");
+                    }
+                    if (!Equals(pokemon.Last(), mapPokemon))
+                    {
+                        await Task.Delay(_settings.DelayBetweenPokemonCatch);
+                    }
+                });
             }
         }
 
