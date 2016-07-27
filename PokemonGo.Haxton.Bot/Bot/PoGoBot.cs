@@ -70,11 +70,13 @@ namespace PokemonGo.Haxton.Bot.Bot
         {
             FortData firstPokestop = null;
             var numberOfPokestopsVisited = 0;
+            var returnToStart = DateTime.Now;
             while (true)
             {
-                if (numberOfPokestopsVisited >= 100)
+                if (returnToStart.AddMinutes(6) <= DateTime.Now)
                 {
                     _navigation.TeleportToPokestop(firstPokestop);
+                    returnToStart = DateTime.Now;
                 }
                 var pokestopList = (await _map.GetPokeStops()).Where(t => t.CooldownCompleteTimestampMs < DateTime.UtcNow.ToUnixTime()).ToList();
                 if (!pokestopList.Any())
