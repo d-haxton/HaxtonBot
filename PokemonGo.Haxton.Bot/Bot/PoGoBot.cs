@@ -82,7 +82,7 @@ namespace PokemonGo.Haxton.Bot.Bot
             var returnToStart = DateTime.Now;
             while (true)
             {
-                if (returnToStart.AddMinutes(5) <= DateTime.Now)
+                if (returnToStart.AddMinutes(2) <= DateTime.Now)
                 {
                     await _navigation.TeleportToPokestop(firstPokestop);
                     returnToStart = DateTime.Now;
@@ -108,15 +108,18 @@ namespace PokemonGo.Haxton.Bot.Bot
 
                 if (_settings.Teleport)
                 {
-                    //var distance = LocationUtils.CalculateDistanceInMeters(_navigation.CurrentLatitude,
-                    //_navigation.CurrentLongitude, closestPokestop.Latitude, closestPokestop.Longitude);
+                    var distance = LocationUtils.CalculateDistanceInMeters(_navigation.CurrentLatitude, _navigation.CurrentLongitude, closestPokestop.Latitude, closestPokestop.Longitude);
 
                     if (firstPokestop == null)
                         firstPokestop = closestPokestop;
                     //var fortWithPokemon = (await _map.GetFortWithPokemon());
                     //var biggestFort = fortWithPokemon.MaxBy(x => x.GymPoints);
-                    //if (distance > 100)
-                    //    closestPokestop = biggestFort;
+                    if (distance > 100)
+                    {
+                        var r = new Random((int)DateTime.Now.Ticks);
+                        closestPokestop =
+                            pokestopList.ElementAt(r.Next(pokestopList.Count));
+                    }
 
                     await _navigation.TeleportToPokestop(closestPokestop);
                 }
