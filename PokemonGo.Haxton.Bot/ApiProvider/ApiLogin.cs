@@ -17,7 +17,7 @@ namespace PokemonGo.Haxton.Bot.ApiProvider
     {
         event GoogleDeviceCodeDelegate GoogleDeviceCodeEvent;
 
-        Task DoGoogleLogin();
+        Task DoGoogleLogin(string username, string password);
 
         Task DoPtcLogin(string username, string password);
     }
@@ -35,25 +35,26 @@ namespace PokemonGo.Haxton.Bot.ApiProvider
 
         public event GoogleDeviceCodeDelegate GoogleDeviceCodeEvent = delegate { };
 
-        public async Task DoGoogleLogin()
+        public async Task DoGoogleLogin(string username, string password)
         {
             _client.AuthType = AuthType.Google;
 
-            GoogleLogin.TokenResponseModel tokenResponse;
-            if (_client.Settings.GoogleRefreshToken != string.Empty)
-            {
-                tokenResponse = await GoogleLogin.GetAccessToken(_client.Settings.GoogleRefreshToken);
-                _client.AuthToken = tokenResponse?.id_token;
-            }
+            _client.AuthToken = GoogleLogin.DoLogin(username, password);
+            //GoogleLogin.TokenResponseModel tokenResponse;
+            //if (_client.Settings.GoogleRefreshToken != string.Empty)
+            //{
+            //    tokenResponse = await GoogleLogin.GetAccessToken(_client.Settings.GoogleRefreshToken);
+            //    _client.AuthToken = tokenResponse?.id_token;
+            //}
 
-            if (_client.AuthToken == null)
-            {
-                var deviceCode = await GoogleLogin.GetDeviceCode();
-                GoogleDeviceCodeEvent?.Invoke(deviceCode.user_code, deviceCode.verification_url);
-                tokenResponse = await GoogleLogin.GetAccessToken(deviceCode);
-                _client.Settings.GoogleRefreshToken = tokenResponse?.refresh_token;
-                _client.AuthToken = tokenResponse?.id_token;
-            }
+            //if (_client.AuthToken == null)
+            //{
+            //    var deviceCode = await GoogleLogin.GetDeviceCode();
+            //    GoogleDeviceCodeEvent?.Invoke(deviceCode.user_code, deviceCode.verification_url);
+            //    tokenResponse = await GoogleLogin.GetAccessToken(deviceCode);
+            //    _client.Settings.GoogleRefreshToken = tokenResponse?.refresh_token;
+            //    _client.AuthToken = tokenResponse?.id_token;
+            //}
 
             await SetServer();
         }
@@ -78,7 +79,7 @@ namespace PokemonGo.Haxton.Bot.ApiProvider
                 var checkAwardedBadgesMessage = new CheckAwardedBadgesMessage();
                 var downloadSettingsMessage = new DownloadSettingsMessage
                 {
-                    Hash = "05daf51635c82611d1aac95c0b051d3ec088a930"
+                    Hash = "4a2e9bc330dae60e7b74fc85b98868ab4700802e"
                 };
 
                 var serverRequest = _apiBaseRpc.RequestBuilder.GetRequestEnvelope(

@@ -1,6 +1,8 @@
-﻿using System.Collections.Generic;
-using System.Threading.Tasks;
+﻿using DankMemes.GPSOAuthSharp;
 using PokemonGo.RocketAPI.Helpers;
+using System;
+using System.Collections.Generic;
+using System.Threading.Tasks;
 
 namespace PokemonGo.RocketAPI.Login
 {
@@ -8,20 +10,47 @@ namespace PokemonGo.RocketAPI.Login
     {
         private const string OauthTokenEndpoint = "https://www.googleapis.com/oauth2/v4/token";
         private const string OauthEndpoint = "https://accounts.google.com/o/oauth2/device/code";
-        private const string ClientId = "848232511240-73ri3t7plvk96pj4f85uj8otdat2alem.apps.googleusercontent.com";
+        private const string ClientId = "848232511240-7so421jotr2609rmqakceuu1luuq0ptb.apps.googleusercontent.com";
         private const string ClientSecret = "NCjF1TLi2CcY6t5mt0ZveuL7";
 
         public static async Task<TokenResponseModel> GetAccessToken(DeviceCodeModel deviceCode)
         {
+            int count = 0;
+
             //Poll until user submitted code..
             TokenResponseModel tokenResponse;
             do
             {
                 await Task.Delay(2000);
                 tokenResponse = await PollSubmittedToken(deviceCode.device_code);
-            } while (tokenResponse.access_token == null || tokenResponse.refresh_token == null);
+                count++;
+            } while (tokenResponse.access_token == null || tokenResponse.refresh_token == null && count < 100);
 
             return tokenResponse;
+        }
+
+        public static string DoLogin(string username, string password)
+        {
+            GPSOAuthClient client = new GPSOAuthClient(username, password);
+            Dictionary<string, string> response = client.PerformMasterLogin();
+
+            if (response.ContainsKey("Error"))
+                throw new Exception(response["Error"]);
+
+            //Todo: captcha/2fa implementation
+
+            if (!response.ContainsKey("Auth"))
+                throw new Exception();
+
+            Dictionary<string, string> oauthResponse = client.PerformOAuth(response["Token"],
+                "audience:server:client_id:848232511240-7so421jotr2609rmqakceuu1luuq0ptb.apps.googleusercontent.com",
+                "com.nianticlabs.pokemongo",
+                "321187995bc7cdc2b5fc91b11a96e2baa8602c62");
+
+            if (!oauthResponse.ContainsKey("Auth"))
+                throw new Exception();
+
+            return oauthResponse["Auth"];
         }
 
         public static async Task<DeviceCodeModel> GetDeviceCode()

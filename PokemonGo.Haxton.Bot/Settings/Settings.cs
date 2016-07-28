@@ -17,6 +17,9 @@ namespace PokemonGo.Haxton.Bot.Settings
             DefaultAltitude = Convert.ToDouble(ConfigurationManager.AppSettings["DefaultAltitude"]);
             PtcUsername = ConfigurationManager.AppSettings["PtcUsername"];
             PtcPassword = ConfigurationManager.AppSettings["PtcPassword"];
+
+            GoogleUsername = ConfigurationManager.AppSettings["GoogleEmail"];
+            GooglePassword = ConfigurationManager.AppSettings["GooglePassword"];
         }
 
         public AuthType AuthType { get; }
@@ -45,6 +48,8 @@ namespace PokemonGo.Haxton.Bot.Settings
 
         public string PtcPassword { get; }
         public string PtcUsername { get; }
+        public string GoogleUsername { get; }
+        public string GooglePassword { get; }
         public string ApiUrl { get; set; }
     }
 }

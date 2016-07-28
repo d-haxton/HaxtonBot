@@ -37,7 +37,7 @@ namespace PokemonGo.Haxton.Bot.Login
             logger.Info($"Logging in with account type: {_client.AuthType}");
             if (_client.AuthType == AuthType.Google)
             {
-                _apiLogin.DoGoogleLogin().GetAwaiter().GetResult();
+                _apiLogin.DoGoogleLogin(_client.Settings.GoogleUsername, _client.Settings.GooglePassword).GetAwaiter().GetResult();
             }
             else
             {

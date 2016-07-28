@@ -1,9 +1,9 @@
-﻿using System.Diagnostics;
+﻿using Google.Protobuf;
+using POGOProtos.Networking.Envelopes;
+using PokemonGo.RocketAPI.Exceptions;
+using System.Diagnostics;
 using System.Net.Http;
 using System.Threading.Tasks;
-using Google.Protobuf;
-using PokemonGo.RocketAPI.Exceptions;
-using POGOProtos.Networking.Envelopes;
 
 namespace PokemonGo.RocketAPI.Extensions
 {
@@ -17,7 +17,7 @@ namespace PokemonGo.RocketAPI.Extensions
             var response = await PostProto<TRequest>(client, url, requestEnvelope);
 
             if (response.Returns.Count == 0)
-                throw new InvalidResponseException();
+                return new TResponsePayload();
 
             //Decode payload
             //todo: multi-payload support

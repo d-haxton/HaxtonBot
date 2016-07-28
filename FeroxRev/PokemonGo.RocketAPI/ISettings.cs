@@ -11,6 +11,8 @@ namespace PokemonGo.RocketAPI
         string GoogleRefreshToken { get; set; }
         string PtcPassword { get; }
         string PtcUsername { get; }
+        string GoogleUsername { get; }
+        string GooglePassword { get; }
         string ApiUrl { get; set; }
     }
 }

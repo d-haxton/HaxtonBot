@@ -218,7 +218,13 @@ namespace PokemonGo.Haxton.Bot.Bot
                 {
                     taskList.Add(new Task(async () =>
                     {
-                        await _encounter.CatchPokemon(encounter, mapPokemon);
+                        try
+                        {
+                            await _encounter.CatchPokemon(encounter, mapPokemon);
+                        }
+                        catch (Exception)
+                        {
+                        }
                     }));
                 }
                 else
