@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.Configuration;
 using System.IO;
+using System.Net.Http.Headers;
 
 namespace PokemonGo.Haxton.Bot.Settings
 {
@@ -28,8 +29,27 @@ namespace PokemonGo.Haxton.Bot.Settings
             PokemonsToEvolve = GetPokemon("UserSettings\\PokemonToEvolve.cfg");
             PokemonsNotToTransfer = GetPokemon("UserSettings\\PokemonToKeep.cfg");
             PokemonsNotToCatch = GetPokemon("UserSettings\\PokemonToAvoid.cfg");
+            LocationsToVisit = GetLocations("UserSettings\\LocationsToCycle.cfg");
+            BurstMode = Convert.ToBoolean(ConfigurationManager.AppSettings["UseBurstMode"]);
             //
         }
+
+        private IEnumerable<KeyValuePair<double, double>> GetLocations(string usersettingsLocationstocycleCfg)
+        {
+            var list = new List<KeyValuePair<double, double>>();
+            var text = File.ReadLines(usersettingsLocationstocycleCfg);
+            foreach (var s in text)
+            {
+                var splitLines = s.Split(',');
+                var x = double.Parse(splitLines[0]);
+                var y = double.Parse(splitLines[1]);
+                var kvp = new KeyValuePair<double, double>(x, y);
+                list.Add(kvp);
+            }
+            return list;
+        }
+
+        public IEnumerable<KeyValuePair<double, double>> LocationsToVisit { get; }
 
         private Dictionary<ItemId, int> GetItemRecycleFilter()
         {
@@ -68,6 +88,7 @@ namespace PokemonGo.Haxton.Bot.Settings
         public int KeepMinDuplicatePokemon { get; }
         public bool PrioritizeIvOverCp { get; }
         public int MaxTravelDistanceInMeters { get; }
+        public bool BurstMode { get; }
         public bool UseGpxPathing { get; }
         public string GpxFile { get; }
         public bool UseLuckyEggsWhileEvolving { get; }

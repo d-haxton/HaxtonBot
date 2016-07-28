@@ -80,8 +80,7 @@ namespace PokemonGo.Haxton.Bot.Navigation
                     return;
                 var isLowProbability = probability.HasValue && probability.Value < 0.35;
                 var isHighCp = encounter != null && encounter.WildPokemon?.PokemonData?.Cp > 400;
-                var isHighPerfection = PokemonInfo.CalculatePokemonPerfection(encounter?.WildPokemon?.PokemonData) >=
-                                       _logicSettings.KeepMinIvPercentage;
+                var isHighPerfection = PokemonInfo.CalculatePokemonPerfection(encounter?.WildPokemon?.PokemonData) >= _logicSettings.KeepMinIvPercentage;
 
                 if ((isLowProbability && isHighCp) || isHighPerfection)
                     UseBerry(pokemon.EncounterId, pokemon.SpawnPointId);
@@ -91,12 +90,10 @@ namespace PokemonGo.Haxton.Bot.Navigation
 
                 caughtPokemonResponse =
                     await _apiEncounter.CatchPokemon(pokemon.EncounterId, pokemon.SpawnPointId, pokeball);
-                logger.Info($"[{caughtPokemonResponse.Status} - {attempts}] {pokemon.PokemonId} encountered. {PokemonInfo.CalculatePokemonPerfection(encounter?.WildPokemon?.PokemonData)}% perfect. {encounter?.WildPokemon?.PokemonData?.Cp} CP. Probabilty: {probability}");
+                logger.Info($"[{caughtPokemonResponse.Status} - {attempts}] {pokemon.PokemonId} {Math.Round(PokemonInfo.CalculatePokemonPerfection(encounter?.WildPokemon?.PokemonData), 1)}% perfect. {encounter?.WildPokemon?.PokemonData?.Cp} CP. Probabilty: {Math.Round((double)probability * 100, 1)} with ball: {pokeball}");
                 attempts++;
             } while (caughtPokemonResponse.Status == CatchPokemonResponse.Types.CatchStatus.CatchMissed ||
                      caughtPokemonResponse.Status == CatchPokemonResponse.Types.CatchStatus.CatchEscape);
-            //if (caughtPokemonResponse.Status != CatchPokemonResponse.Types.CatchStatus.CatchSuccess)
-            //    logger.Info($"Dude. I tried. I'm sorry, but {pokemon.PokemonId} left. Reason: {caughtPokemonResponse.Status}");
         }
 
         private async void UseBerry(ulong encounterId, string spawnPointId)

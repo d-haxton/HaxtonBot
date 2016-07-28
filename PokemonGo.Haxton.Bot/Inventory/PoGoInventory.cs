@@ -77,7 +77,7 @@ namespace PokemonGo.Haxton.Bot.Inventory
             Task.Run(UpdateInventory);
         }
 
-        public GetInventoryResponse CachedInventory { get; set; } = new GetInventoryResponse();
+        public GetInventoryResponse CachedInventory { get; set; }
 
         public DownloadItemTemplatesResponse CachedItemTemplates { get; set; }
 
@@ -309,7 +309,9 @@ namespace PokemonGo.Haxton.Bot.Inventory
         private async Task RequestInventory()
         {
             logger.Info($"Updating inventory at {DateTime.Now}");
-            CachedInventory = await _apiInventory.GetInventory();
+            var inventory = await _apiInventory.GetInventory();
+            if (inventory.InventoryDelta?.InventoryItems != null)
+                CachedInventory = inventory;
             CachedItemTemplates = await _apiDownload.GetItemTemplates();
         }
     }

@@ -104,6 +104,10 @@ namespace PokemonGo.Haxton.Bot.ApiProvider
                     {
                         RequestType = RequestType.DownloadSettings,
                         RequestMessage = downloadSettingsMessage.ToByteString()
+                    },
+                    new Request()
+                    {
+                        RequestType = RequestType.DownloadItemTemplates
                     });
 
                 var serverResponse = await _apiBaseRpc.PostProto<Request>(Resources.RpcUrl, serverRequest);

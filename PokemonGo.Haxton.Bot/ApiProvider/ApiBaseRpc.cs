@@ -5,6 +5,9 @@ using PokemonGo.RocketAPI;
 using PokemonGo.RocketAPI.Extensions;
 using PokemonGo.RocketAPI.Helpers;
 using PokemonGo.RocketAPI.HttpClient;
+using System;
+using System.Collections.Concurrent;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace PokemonGo.Haxton.Bot.ApiProvider
@@ -26,8 +29,9 @@ namespace PokemonGo.Haxton.Bot.ApiProvider
     public class ApiBaseRpc : IApiBaseRpc
     {
         private readonly IApiClient _client;
-        private readonly ISettings _settings;
         private readonly PokemonHttpClient _pokemonHttpClient;
+        private int _requestPerSecond { get; set; }
+        private object lockObject = new object();
 
         public RequestBuilder RequestBuilder
             => new RequestBuilder(_client.AuthToken, _client.AuthType, _client.CurrentLatitude,
@@ -39,27 +43,63 @@ namespace PokemonGo.Haxton.Bot.ApiProvider
         {
             _client = client;
             _pokemonHttpClient = new PokemonHttpClient();
+
+            Task.Run(UpdateCounter);
+        }
+
+        private async Task UpdateCounter()
+        {
+            while (true)
+            {
+                _requestPerSecond = 0;
+                await Task.Delay(1000);
+            }
         }
 
         public async Task<TResponsePayload> PostProtoPayload<TRequest, TResponsePayload>(RequestType type, IMessage message) where TRequest : IMessage<TRequest> where TResponsePayload : IMessage<TResponsePayload>, new()
         {
             var requestEnvelops = RequestBuilder.GetRequestEnvelope(type, message);
+            lock (lockObject)
+            {
+                while (_requestPerSecond >= 3)
+                    Thread.Sleep(100);
+                _requestPerSecond++;
+            }
             return await _pokemonHttpClient.PostProtoPayload<TRequest, TResponsePayload>(ApiUrl, requestEnvelops);
         }
 
         public async Task<TResponsePayload> PostProtoPayload<TRequest, TResponsePayload>(RequestEnvelope requestEnvelope) where TRequest : IMessage<TRequest>
             where TResponsePayload : IMessage<TResponsePayload>, new()
         {
+            lock (lockObject)
+            {
+                while (_requestPerSecond >= 3)
+                    Thread.Sleep(100);
+                _requestPerSecond++;
+            }
+
             return await _pokemonHttpClient.PostProtoPayload<TRequest, TResponsePayload>(ApiUrl, requestEnvelope);
         }
 
         public async Task<ResponseEnvelope> PostProto<TRequest>(RequestEnvelope requestEnvelope) where TRequest : IMessage<TRequest>
         {
+            lock (lockObject)
+            {
+                while (_requestPerSecond >= 3)
+                    Thread.Sleep(100);
+                _requestPerSecond++;
+            }
             return await _pokemonHttpClient.PostProto<TRequest>(ApiUrl, requestEnvelope);
         }
 
         public async Task<ResponseEnvelope> PostProto<TRequest>(string url, RequestEnvelope requestEnvelope) where TRequest : IMessage<TRequest>
         {
+            lock (lockObject)
+            {
+                while (_requestPerSecond >= 3)
+                    Thread.Sleep(100);
+                _requestPerSecond++;
+            }
             return await _pokemonHttpClient.PostProto<TRequest>(url, requestEnvelope);
         }
     }

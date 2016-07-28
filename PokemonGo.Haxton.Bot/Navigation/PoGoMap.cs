@@ -82,13 +82,13 @@ namespace PokemonGo.Haxton.Bot.Navigation
         {
             var mapObjects = await _map.GetMapObjects();
             var catchable = mapObjects.MapCells.SelectMany(i => i.CatchablePokemons).ToList();
-            var wild = mapObjects.MapCells.SelectMany(x => x.WildPokemons).Select(x => new MapPokemon()
-            {
-                EncounterId = x.EncounterId,
-                SpawnPointId = x.SpawnPointId,
-                PokemonId = x.PokemonData.PokemonId
-            });
-            catchable.AddRange(wild);
+            //var wild = mapObjects.MapCells.SelectMany(x => x.WildPokemons).Select(x => new MapPokemon()
+            //{
+            //    EncounterId = x.EncounterId,
+            //    SpawnPointId = x.SpawnPointId,
+            //    PokemonId = x.PokemonData.PokemonId
+            //});
+            //catchable.AddRange(wild);
             return
                 catchable.OrderBy(t =>
                         LocationUtils.CalculateDistanceInMeters(_navigation.CurrentLatitude, _navigation.CurrentLongitude, t.Latitude, t.Longitude));

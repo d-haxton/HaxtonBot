@@ -46,8 +46,8 @@ namespace PokemonGo.Haxton.Bot.Utilities
             while (true)
             {
                 var player = (await _player.GetPlayer()).PlayerData;
-                _playerName = player.Username;
-                TotalStardust = player.Currencies.FirstOrDefault(t => t.Name == "STARDUST")?.Amount ?? 0;
+                _playerName = player?.Username;
+                TotalStardust = player?.Currencies.FirstOrDefault(t => t.Name == "STARDUST")?.Amount ?? 0;
                 await Task.Delay(15000);
             }
         }

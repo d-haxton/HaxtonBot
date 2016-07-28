@@ -15,7 +15,7 @@ namespace PokemonGo.Haxton.Bot.ApiProvider
 
         Task<CatchPokemonResponse> CatchPokemon(ulong encounterId, string spawnPointGuid, ItemId pokeballItemId, double normalizedRecticleSize = 1.950, double spinModifier = 1, double normalizedHitPos = 1);
 
-        Task<IncenseEncounterResponse> EncounterIncensePokemon(long encounterId, string encounterLocation);
+        Task<IncenseEncounterResponse> EncounterIncensePokemon(ulong encounterId, string encounterLocation);
 
         Task<DiskEncounterResponse> EncounterLurePokemon(ulong encounterId, string fortId);
 
@@ -74,11 +74,11 @@ namespace PokemonGo.Haxton.Bot.ApiProvider
             return await _baseRpc.PostProtoPayload<Request, CatchPokemonResponse>(RequestType.CatchPokemon, message);
         }
 
-        public async Task<IncenseEncounterResponse> EncounterIncensePokemon(long encounterId, string encounterLocation)
+        public async Task<IncenseEncounterResponse> EncounterIncensePokemon(ulong encounterId, string encounterLocation)
         {
             var message = new IncenseEncounterMessage()
             {
-                EncounterId = encounterId,
+                EncounterId = (long)encounterId,
                 EncounterLocation = encounterLocation
             };
 

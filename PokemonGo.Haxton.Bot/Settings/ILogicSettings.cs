@@ -35,5 +35,7 @@ namespace PokemonGo.Haxton.Bot
 
         ICollection<PokemonId> PokemonsNotToCatch { get; }
         bool Teleport { get; set; }
+        bool BurstMode { get; }
+        IEnumerable<KeyValuePair<double, double>> LocationsToVisit { get; }
     }
 }
