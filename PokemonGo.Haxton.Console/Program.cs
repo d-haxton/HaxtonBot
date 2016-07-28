@@ -11,12 +11,12 @@ using PokemonGo.RocketAPI;
 using StructureMap;
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Runtime.ExceptionServices;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-
 namespace PokemonGo.Haxton.Console
 {
     internal class Program
@@ -52,8 +52,8 @@ namespace PokemonGo.Haxton.Console
                     var split = input?.Split(',');
                     if (split != null)
                     {
-                        var x = double.Parse(split[0]);
-                        var y = double.Parse(split[1]);
+                        var x = double.Parse(split[0], CultureInfo.GetCultureInfo("en-US").NumberFormat);
+                        var y = double.Parse(split[1], CultureInfo.GetCultureInfo("en-US").NumberFormat);
                         foreach (var poGoSnipe in snipe)
                         {
                             poGoSnipe.AddNewSnipe(x, y);
