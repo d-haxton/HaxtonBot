@@ -65,10 +65,10 @@ namespace PokemonGo.Haxton.Bot.Bot
 
             var taskList = new List<Task>
             {
-                //Task
-                //    .Run(RecycleItemsTask),
-                //Task
-                //    .Run(TransferDuplicatePokemon),
+                Task
+                    .Run(RecycleItemsTask),
+                Task
+                    .Run(TransferDuplicatePokemon),
                 Task
                     .Run(FarmPokestopsTask)
             };
