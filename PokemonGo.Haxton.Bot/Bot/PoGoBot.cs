@@ -207,23 +207,27 @@ namespace PokemonGo.Haxton.Bot.Bot
             }
             foreach (var mapPokemon in pokemon)
             {
-                //logger.Info($"Found {pokemon.Count()} pokemon in your area.");
-                if (_settings.UsePokemonToNotCatchFilter &&
-                    _settings.PokemonsNotToCatch.Contains(mapPokemon.PokemonId))
+                if (_settings.UsePokemonToNotCatchFilter && _settings.PokemonsNotToCatch.Contains(mapPokemon.PokemonId))
                 {
                     continue;
                 }
-
-                var encounter = await _encounter.EncounterPokemonAsync(mapPokemon);
-                if (encounter.Status == EncounterResponse.Types.Status.EncounterSuccess)
+#pragma warning disable 4014
+                Task.Run(async () =>
+#pragma warning restore 4014
                 {
-                    await _encounter.CatchPokemon(encounter, mapPokemon);
-                }
-                else
-                {
-                    if (encounter.Status != EncounterResponse.Types.Status.EncounterAlreadyHappened)
-                        logger.Warn($"Unable to catch pokemon. Reason: {encounter.Status}");
-                }
+                    var encounter = await _encounter.EncounterPokemonAsync(mapPokemon);
+                    if (encounter.Status == EncounterResponse.Types.Status.EncounterSuccess)
+                    {
+                        if (isSniping)
+                            await _navigation.TeleportToPokestop(fortData);
+                        await _encounter.CatchPokemon(encounter, mapPokemon);
+                    }
+                    else
+                    {
+                        if (encounter.Status != EncounterResponse.Types.Status.EncounterAlreadyHappened)
+                            logger.Warn($"Unable to catch pokemon. Reason: {encounter.Status}");
+                    }
+                });
             }
         }
 
