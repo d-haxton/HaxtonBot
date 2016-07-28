@@ -112,9 +112,7 @@ namespace PokemonGo.Haxton.Bot.Bot
                         (await _map.GetPokeStops()).Where(
                             t => t.CooldownCompleteTimestampMs < DateTime.UtcNow.ToUnixTime()).ToList();
                 }
-                //while (pokestopList.Any())
-                //{
-                //logger.Info($"Found {pokestopList.Count} pokestops.");
+
                 var closestPokestop = pokestopList.OrderBy(
                     i =>
                         LocationUtils.CalculateDistanceInMeters(_navigation.CurrentLatitude,
@@ -279,8 +277,15 @@ namespace PokemonGo.Haxton.Bot.Bot
             var pokemon = _inventory.GetPokemonToEvolve(list).ToList();
             pokemon.ForEach(async p =>
             {
-                logger.Info($"Evolving pokemon {p.PokemonId} with cp {p.Cp}.");
-                await _inventory.EvolvePokemon(p.Id);
+                try
+                {
+                    logger.Info($"Evolving pokemon {p.PokemonId} with cp {p.Cp}.");
+                    await _inventory.EvolvePokemon(p.Id);
+                }
+                catch (Exception ex)
+                {
+                    logger.Warn(ex, "Failed evolving egg");
+                }
             });
         }
 
@@ -310,9 +315,16 @@ namespace PokemonGo.Haxton.Bot.Bot
                 var itemsToThrowAway = _inventory.GetItemsToRecycle(_settings.ItemRecycleFilter).ToList();
                 itemsToThrowAway.ForEach(async x =>
                 {
-                    logger.Info($"Recycling item(s): {x.ItemId} x{x.Count}");
-                    _inventory.RecycleItems(x.ItemId, x.Count);
-                    await Task.Delay(100);
+                    try
+                    {
+                        logger.Info($"Recycling item(s): {x.ItemId} x{x.Count}");
+                        _inventory.RecycleItems(x.ItemId, x.Count);
+                        await Task.Delay(100);
+                    }
+                    catch (Exception ex)
+                    {
+                        logger.Warn(ex, "Failed recyclying items.");
+                    }
                 });
                 await Task.Delay(30000);
             }
