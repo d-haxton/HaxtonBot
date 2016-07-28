@@ -82,6 +82,7 @@ namespace PokemonGo.Haxton.Bot.Bot
             FortData firstPokestop = null;
             var numberOfPokestopsVisited = 0;
             var returnToStart = DateTime.Now;
+            var pokestopList = (await _map.GetPokeStops()).Where(t => t.CooldownCompleteTimestampMs < DateTime.UtcNow.ToUnixTime()).ToList();
             while (true)
             {
                 var isSniping = false;
@@ -100,18 +101,19 @@ namespace PokemonGo.Haxton.Bot.Bot
                     await _navigation.TeleportToPokestop(firstPokestop);
                     returnToStart = DateTime.Now;
                 }
-                var pokestopList =
-                    (await _map.GetPokeStops()).Where(
-                        t => t.CooldownCompleteTimestampMs < DateTime.UtcNow.ToUnixTime())
-                        .ToList();
 
                 if (!pokestopList.Any())
                 {
                     await _navigation.TeleportToPokestop(firstPokestop);
-                    pokestopList =
+                    var oldPokestopList =
                         (await _map.GetPokeStops()).Where(
                             t => t.CooldownCompleteTimestampMs < DateTime.UtcNow.ToUnixTime()).ToList();
+                    if (oldPokestopList.Any())
+                        pokestopList = oldPokestopList;
                 }
+                var newPokestopList = (await _map.GetPokeStops()).Where(t => t.CooldownCompleteTimestampMs < DateTime.UtcNow.ToUnixTime()).ToList();
+                if (newPokestopList.Any())
+                    pokestopList = newPokestopList;
                 if (!pokestopList.Any())
                     continue;
 
