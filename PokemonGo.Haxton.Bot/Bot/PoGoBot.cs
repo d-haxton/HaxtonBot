@@ -112,18 +112,21 @@ namespace PokemonGo.Haxton.Bot.Bot
                         (await _map.GetPokeStops()).Where(
                             t => t.CooldownCompleteTimestampMs < DateTime.UtcNow.ToUnixTime()).ToList();
                 }
+                if (!pokestopList.Any())
+                    continue;
 
                 var closestPokestop = pokestopList.OrderBy(
                     i =>
                         LocationUtils.CalculateDistanceInMeters(_navigation.CurrentLatitude,
                             _navigation.CurrentLongitude, i.Latitude, i.Longitude)).First();
 
+                if (firstPokestop == null)
+                    firstPokestop = closestPokestop;
+
                 if (_settings.Teleport)
                 {
                     var distance = LocationUtils.CalculateDistanceInMeters(_navigation.CurrentLatitude, _navigation.CurrentLongitude, closestPokestop.Latitude, closestPokestop.Longitude);
 
-                    if (firstPokestop == null)
-                        firstPokestop = closestPokestop;
                     //var fortWithPokemon = (await _map.GetFortWithPokemon());
                     //var biggestFort = fortWithPokemon.MaxBy(x => x.GymPoints);
                     if (distance > 100)
@@ -186,7 +189,7 @@ namespace PokemonGo.Haxton.Bot.Bot
 
         private async Task CatchNearbyPokemon(FortData fortData, bool isSniping)
         {
-            var pokemon = _map.GetNearbyPokemonClosestFirst().GetAwaiter().GetResult().DistinctBy(i => i.SpawnPointId).ToList();
+            var pokemon = (await _map.GetNearbyPokemonClosestFirst()).DistinctBy(i => i.SpawnPointId).ToList();
             if (pokemon.Any())
             {
                 var pokemonList = string.Join(", ", pokemon.Select(x => x.PokemonId).ToArray());
