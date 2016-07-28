@@ -28,38 +28,39 @@ namespace PokemonGo.Haxton.Console
             {
                 while (true)
                 {
-                    container = new Container(_ =>
-                    {
-                        _.For<IApiBaseRpc>().Use<ApiBaseRpc>().Singleton();
-                        _.For<IApiClient>().Use<ApiClient>().Singleton();
-                        _.For<IApiDownload>().Use<ApiDownload>().Singleton();
-                        _.For<IApiEncounter>().Use<ApiEncounter>().Singleton();
-                        _.For<IApiFort>().Use<ApiFort>().Singleton();
-                        _.For<IApiInventory>().Use<ApiInventory>().Singleton();
-                        _.For<IApiLogin>().Use<ApiLogin>().Singleton();
-                        _.For<IApiMap>().Use<ApiMap>().Singleton();
-                        _.For<IApiMisc>().Use<ApiMisc>().Singleton();
-                        _.For<IApiPlayer>().Use<ApiPlayer>().Singleton();
-
-                        _.For<IPoGoBot>().Use<PoGoBot>().Singleton();
-                        _.For<IPoGoInventory>().Use<PoGoInventory>().Singleton();
-                        _.For<IPoGoEncounter>().Use<PoGoEncounter>().Singleton();
-                        _.For<IPoGoNavigation>().Use<PoGoNavigation>().Singleton();
-                        _.For<IPoGoMap>().Use<PoGoMap>().Singleton();
-                        _.For<IPoGoStatistics>().Use<PoGoStatistics>().Singleton();
-
-                        _.For<ISettings>().Use<Settings>().Singleton();
-                        _.For<ILogicSettings>().Use<LogicSettings>().Singleton();
-
-                        _.Scan(s =>
-                        {
-                            s.SingleImplementationsOfInterface();
-                            s.AssemblyContainingType<IApiClient>();
-                            s.WithDefaultConventions();
-                        });
-                    });
                     try
                     {
+                        container = new Container(_ =>
+                                {
+                                    _.For<IApiBaseRpc>().Use<ApiBaseRpc>().Singleton();
+                                    _.For<IApiClient>().Use<ApiClient>().Singleton();
+                                    _.For<IApiDownload>().Use<ApiDownload>().Singleton();
+                                    _.For<IApiEncounter>().Use<ApiEncounter>().Singleton();
+                                    _.For<IApiFort>().Use<ApiFort>().Singleton();
+                                    _.For<IApiInventory>().Use<ApiInventory>().Singleton();
+                                    _.For<IApiLogin>().Use<ApiLogin>().Singleton();
+                                    _.For<IApiMap>().Use<ApiMap>().Singleton();
+                                    _.For<IApiMisc>().Use<ApiMisc>().Singleton();
+                                    _.For<IApiPlayer>().Use<ApiPlayer>().Singleton();
+
+                                    _.For<IPoGoBot>().Use<PoGoBot>().Singleton();
+                                    _.For<IPoGoInventory>().Use<PoGoInventory>().Singleton();
+                                    _.For<IPoGoEncounter>().Use<PoGoEncounter>().Singleton();
+                                    _.For<IPoGoNavigation>().Use<PoGoNavigation>().Singleton();
+                                    _.For<IPoGoMap>().Use<PoGoMap>().Singleton();
+                                    _.For<IPoGoStatistics>().Use<PoGoStatistics>().Singleton();
+
+                                    _.For<ISettings>().Use<Settings>().Singleton();
+                                    _.For<ILogicSettings>().Use<LogicSettings>().Singleton();
+
+                                    _.Scan(s =>
+                                    {
+                                        s.SingleImplementationsOfInterface();
+                                        s.AssemblyContainingType<IApiClient>();
+                                        s.WithDefaultConventions();
+                                    });
+                                });
+
                         var login = container.GetInstance<IPoGoLogin>();
                         login.DoLogin();
                         var bot = container.GetInstance<IPoGoBot>();
@@ -67,7 +68,7 @@ namespace PokemonGo.Haxton.Console
                         task.ForEach(x => x.ContinueWith(
                             (t) => { throw new Exception("Main thread restarting due to lower task exception"); }));
                         Task.Run(UpdateConsole);
-                        Task.WaitAll(task.ToArray());
+                        Task.WaitAny(task.ToArray());
                     }
                     catch (Exception ex)
                     {

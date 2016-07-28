@@ -65,14 +65,11 @@ namespace PokemonGo.Haxton.Bot.Bot
             var taskList = new List<Task>
             {
                 Task
-                    .Run(RecycleItemsTask)
-                    .ContinueWith(t => RecycleItemsTask()),
+                    .Run(RecycleItemsTask),
                 Task
-                    .Run(TransferDuplicatePokemon)
-                    .ContinueWith(t => TransferDuplicatePokemon()),
+                    .Run(TransferDuplicatePokemon),
                 Task
                     .Run(FarmPokestopsTask)
-                    .ContinueWith(t => FarmPokestopsTask())
             };
 
             return taskList;
@@ -277,7 +274,7 @@ namespace PokemonGo.Haxton.Bot.Bot
                 {
                     logger.Info($"Recycling item(s): {x.ItemId} x{x.Count}");
                     _inventory.RecycleItems(x.ItemId, x.Count);
-                    await Task.Delay(500);
+                    await Task.Delay(100);
                 });
                 await Task.Delay(30000);
             }
