@@ -205,30 +205,33 @@ namespace PokemonGo.Haxton.Bot.Bot
                     await _encounter.CatchPokemon(encounterId, fortData.Id, encounter, encounter.PokemonData.PokemonId);
                 }
             }
+            var taskList = new List<Task>();
             foreach (var mapPokemon in pokemon)
             {
                 if (_settings.UsePokemonToNotCatchFilter && _settings.PokemonsNotToCatch.Contains(mapPokemon.PokemonId))
                 {
                     continue;
                 }
-#pragma warning disable 4014
-                Task.Run(async () =>
-#pragma warning restore 4014
+
+                var encounter = await _encounter.EncounterPokemonAsync(mapPokemon);
+                if (encounter.Status == EncounterResponse.Types.Status.EncounterSuccess)
                 {
-                    var encounter = await _encounter.EncounterPokemonAsync(mapPokemon);
-                    if (encounter.Status == EncounterResponse.Types.Status.EncounterSuccess)
+                    taskList.Add(new Task(async () =>
                     {
-                        if (isSniping)
-                            await _navigation.TeleportToPokestop(fortData);
                         await _encounter.CatchPokemon(encounter, mapPokemon);
-                    }
-                    else
-                    {
-                        if (encounter.Status != EncounterResponse.Types.Status.EncounterAlreadyHappened)
-                            logger.Warn($"Unable to catch pokemon. Reason: {encounter.Status}");
-                    }
-                });
+                    }));
+                }
+                else
+                {
+                    if (encounter.Status != EncounterResponse.Types.Status.EncounterAlreadyHappened)
+                        logger.Warn($"Unable to catch pokemon. Reason: {encounter.Status}");
+                }
             }
+            if (isSniping)
+                await _navigation.TeleportToPokestop(fortData);
+            var arrayTasks = taskList.ToArray();
+            arrayTasks.ForEach(x => x.Start());
+            Task.WaitAll(arrayTasks);
         }
 
         private async Task TransferDuplicatePokemon()
