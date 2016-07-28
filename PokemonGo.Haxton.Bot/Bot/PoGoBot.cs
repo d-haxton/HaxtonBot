@@ -148,7 +148,7 @@ namespace PokemonGo.Haxton.Bot.Bot
                             _settings.WalkingSpeedInKilometerPerHour,
                             async () =>
                             {
-                                await CatchNearbyPokemon(closestPokestop);
+                                await CatchNearbyPokemon(closestPokestop, isSniping);
                             });
                 }
 
@@ -176,17 +176,17 @@ namespace PokemonGo.Haxton.Bot.Bot
 
                 if (isSniping)
                 {
-                    await Task.Delay(5000);
+                    //await Task.Delay(5000);
                     await _navigation.TeleportToLocation(loc.Key, loc.Value);
                 }
-                await CatchNearbyPokemon(closestPokestop);
+                await CatchNearbyPokemon(closestPokestop, isSniping);
 
                 await Task.Delay(100);
                 //}
             }
         }
 
-        private async Task CatchNearbyPokemon(FortData fortData)
+        private async Task CatchNearbyPokemon(FortData fortData, bool isSniping)
         {
             var pokemon = _map.GetNearbyPokemonClosestFirst().GetAwaiter().GetResult().DistinctBy(i => i.SpawnPointId).ToList();
             if (pokemon.Any())
@@ -200,6 +200,8 @@ namespace PokemonGo.Haxton.Bot.Bot
                 var encounter = await _encounter.EncounterPokemonLure(encounterId, fortData.Id);
                 if (encounter.Result == DiskEncounterResponse.Types.Result.Success)
                 {
+                    if (isSniping)
+                        await _navigation.TeleportToPokestop(fortData);
                     await _encounter.CatchPokemon(encounterId, fortData.Id, encounter, encounter.PokemonData.PokemonId);
                 }
             }
