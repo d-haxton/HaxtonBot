@@ -73,6 +73,7 @@
     <Compile Include="ApiProvider\ApiMisc.cs" />
     <Compile Include="ApiProvider\ApiPlayer.cs" />
     <Compile Include="Bot\PoGoBot.cs" />
+    <Compile Include="Bot\PoGoSnipe.cs" />
     <Compile Include="Navigation\PoGoEncounter.cs" />
     <Compile Include="Navigation\PoGoFort.cs" />
     <Compile Include="Navigation\PoGoMap.cs" />
