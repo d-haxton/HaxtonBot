@@ -122,6 +122,7 @@ namespace PokemonGo.Haxton.Console
                     catch (Exception ex)
                     {
                         logger.Fatal(ex, "Fatal error, attempting to restart");
+                        await Task.Delay(5000);
                     }
                 }
             }, _cancelToken.Token);
