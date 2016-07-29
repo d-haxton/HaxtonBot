@@ -1,4 +1,4 @@
-﻿using MoreLinq;
+using MoreLinq;
 using NLog;
 using POGOProtos.Enums;
 using POGOProtos.Inventory.Item;
@@ -41,6 +41,7 @@ namespace PokemonGo.Haxton.Bot.Bot
         public bool ShouldRecycleItems { get; set; }
         public bool ShouldEvolvePokemon { get; set; }
         public bool ShouldTransferPokemon { get; set; }
+        public bool isSniping { get; private set; }
 
         public PoGoBot(IPoGoNavigation navigation, IPoGoInventory inventory, IPoGoEncounter encounter, IPoGoSnipe snipe, IPoGoFort fort, IPoGoMap map, ILogicSettings settings)
         {
@@ -93,7 +94,6 @@ namespace PokemonGo.Haxton.Bot.Bot
             var pokestopList = (await _map.GetPokeStops()).Where(t => t.CooldownCompleteTimestampMs < DateTime.UtcNow.ToUnixTime()).ToList();
             while (true)
             {
-                var isSniping = false;
                 var loc = new KeyValuePair<double, double>();
                 if (_snipe.SnipeLocations.Count > 0)
                 {
@@ -258,6 +258,8 @@ namespace PokemonGo.Haxton.Bot.Bot
                     {
                         try
                         {
+                            if (isSniping)
+                                logger.Warn($"Sniping {encounter.WildPokemon.PokemonData.PokemonId}");
                             await _encounter.CatchPokemon(encounter, mapPokemon);
                         }
                         catch (Exception ex)
