@@ -21,7 +21,7 @@ namespace PokemonGo.Haxton.Bot.Navigation
 
         Task TeleportToPokestop(FortData closestPokestop);
 
-        Task TeleportToLocation(double key, double value);
+        Task TeleportToLocation(double lat, double longitude);
     }
 
     public class PoGoNavigation : IPoGoNavigation
@@ -171,12 +171,16 @@ namespace PokemonGo.Haxton.Bot.Navigation
         {
             if (closestPokestop?.Latitude == null)
                 return;
+            //if (closestPokestop.Latitude > 35)
+            //    return;
             await _player.UpdatePlayerLocation(closestPokestop.Latitude, closestPokestop.Longitude, 10);
         }
 
-        public async Task TeleportToLocation(double key, double value)
+        public async Task TeleportToLocation(double lat, double longitude)
         {
-            await _player.UpdatePlayerLocation(key, value, 10);
+            //if (lat > 35)
+            //    return;
+            await _player.UpdatePlayerLocation(lat, longitude, 10);
         }
     }
 }

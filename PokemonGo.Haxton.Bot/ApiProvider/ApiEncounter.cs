@@ -52,7 +52,7 @@ namespace PokemonGo.Haxton.Bot.ApiProvider
             {
                 EncounterId = encounterId,
                 ItemId = itemId,
-                SpawnPointGuid = spawnPointGuid
+                SpawnPointId = spawnPointGuid
             };
 
             return await _baseRpc.PostProtoPayload<Request, UseItemCaptureResponse>(RequestType.UseItemCapture, message);

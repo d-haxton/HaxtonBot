@@ -77,6 +77,8 @@ namespace PokemonGo.Haxton.Bot.Navigation
         {
             CatchPokemonResponse caughtPokemonResponse;
             var attempts = 0;
+            var r = new Random((int)DateTime.Now.Ticks);
+            var waitTime = r.Next(100, 3000);
             do
             {
                 var probability = encounter?.CaptureProbability?.CaptureProbability_?.FirstOrDefault();
@@ -93,22 +95,15 @@ namespace PokemonGo.Haxton.Bot.Navigation
 
                 //var distance = LocationUtils.CalculateDistanceInMeters(_navigation.CurrentLatitude,
                 //    _navigation.CurrentLongitude, pokemon.Latitude, pokemon.Longitude);
-                //lock (lockObject)
-                //    Thread.Sleep(100);
+
+                lock (lockObject)
+                    Thread.Sleep(waitTime);
                 caughtPokemonResponse =
                     await _apiEncounter.CatchPokemon(pokemon.EncounterId, pokemon.SpawnPointId, pokeball);
                 logger.Info($"[{caughtPokemonResponse.Status} - {attempts}] {pokemon.PokemonId} {Math.Round(PokemonInfo.CalculatePokemonPerfection(encounter?.WildPokemon?.PokemonData), 1)}% perfect. {encounter?.WildPokemon?.PokemonData?.Cp} CP. Probabilty: {Math.Round((double)probability * 100, 1)} with ball: {pokeball}");
                 attempts++;
             } while (caughtPokemonResponse.Status == CatchPokemonResponse.Types.CatchStatus.CatchMissed ||
                      caughtPokemonResponse.Status == CatchPokemonResponse.Types.CatchStatus.CatchEscape);
-            //if (caughtPokemonResponse.Status == CatchPokemonResponse.Types.CatchStatus.CatchError)
-            //{
-            //    var retryEncounter = await _apiEncounter.EncounterPokemon(pokemon.EncounterId, pokemon.SpawnPointId);
-            //    if (retryEncounter.Status == Types.Status.EncounterSuccess)
-            //    {
-            //        await CatchPokemon(retryEncounter, pokemon);
-            //    }
-            //}
         }
 
         private async void UseBerry(ulong encounterId, string spawnPointId)

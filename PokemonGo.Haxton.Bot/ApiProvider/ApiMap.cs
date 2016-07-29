@@ -44,7 +44,7 @@ namespace PokemonGo.Haxton.Bot.ApiProvider
             var checkAwardedBadgesMessage = new CheckAwardedBadgesMessage();
             var downloadSettingsMessage = new DownloadSettingsMessage
             {
-                Hash = "4a2e9bc330dae60e7b74fc85b98868ab4700802e"
+                Hash = "05daf51635c82611d1aac95c0b051d3ec088a930"
             };
 
             var request = _baseRpc.RequestBuilder.GetRequestEnvelope(

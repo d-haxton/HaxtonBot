@@ -182,19 +182,23 @@ namespace PokemonGo.Haxton.Bot.Bot
 
                 if (isSniping)
                 {
-                    //await Task.Delay(5000);
-                    await _navigation.TeleportToLocation(loc.Key, loc.Value);
+                    await RemoveSoftBan(closestPokestop);
+                    var x = _navigation.CurrentLatitude;
+                    var y = _navigation.CurrentLongitude;
+                    var burst = await CatchBurstPokemon(loc.Key, loc.Value);
+                    await _navigation.TeleportToLocation(x, y);
+                    burst.ForEach(a => a.Invoke());
                 }
-                if (_settings.BurstMode && isSniping == false)
+                else if (_settings.BurstMode)
                 {
                     await Search();
+                    var lure = await CatchLurePokemon(closestPokestop);
+                    lure.Invoke();
                 }
                 else
                 {
-                    await RemoveSoftBan(closestPokestop);
                     var task = (await CatchBurstPokemon(closestPokestop.Latitude, closestPokestop.Longitude)).ToArray();
-                    task.ForEach(x => x.Start());
-                    Task.WaitAll(task.ToArray());
+                    task.ForEach(x => x.Invoke());
                 }
 
                 await Task.Delay(100);
@@ -204,33 +208,37 @@ namespace PokemonGo.Haxton.Bot.Bot
 
         private async Task Search()
         {
-            var r = new Random((int)DateTime.Now.Ticks);
             var currentLat = _navigation.CurrentLatitude;
             var currentLong = _navigation.CurrentLongitude;
-            var basePokemon = (await CatchBurstPokemon(currentLat, currentLong)).ToList();
+            var basePokemon = (await CatchBurstPokemon(currentLat, currentLong));
+            await _navigation.TeleportToLocation(currentLat, currentLong);
+            basePokemon.ForEach(x => x.Invoke());
             //basePokemon.ForEach(x => x.Start());
             //Task.WaitAll(basePokemon.ToArray());
-            var actionList = new List<Task>();
-            actionList.AddRange(basePokemon);
 
-            actionList.AddRange(await CatchBurstPokemon(currentLat + .005, currentLong + .005));
-            actionList.AddRange(await CatchBurstPokemon(currentLat - .005, currentLong + .005));
-            actionList.AddRange(await CatchBurstPokemon(currentLat + .005, currentLong - .005));
-            actionList.AddRange(await CatchBurstPokemon(currentLat - .005, currentLong - .005));
-
-            logger.Info($"Burst mode found {actionList.Count} total pokemon. {actionList.Count - basePokemon.Count} extra from burst");
+            var tl = await CatchBurstPokemon(currentLat + .002, currentLong + .002);
+            var bl = await CatchBurstPokemon(currentLat - .002, currentLong + .002);
+            var tr = await CatchBurstPokemon(currentLat + .002, currentLong - .002);
+            var br = await CatchBurstPokemon(currentLat - .002, currentLong - .002);
             await _navigation.TeleportToLocation(currentLat, currentLong);
 
-            foreach (var act in actionList)
-            {
-                act.Start();
-            }
-            Task.WaitAll(actionList.ToArray());
+            tl.ForEach(x => x.Invoke());
+            bl.ForEach(x => x.Invoke());
+            tr.ForEach(x => x.Invoke());
+            br.ForEach(x => x.Invoke());
+
+            //logger.Info($"Burst mode found {actionList.Count} total pokemon. {actionList.Count - basePokemon.Count} extra from burst");
+
+            //foreach (var act in actionList)
+            //{
+            //    act.Start();
+            //}
+            //Task.WaitAll(actionList.ToArray());
         }
 
-        private async Task<IEnumerable<Task>> CatchBurstPokemon(double x, double y)
+        private async Task<IEnumerable<Action>> CatchBurstPokemon(double x, double y)
         {
-            var actionList = new List<Task>();
+            var actionList = new List<Action>();
             await _navigation.TeleportToLocation(x, y);
             var pokemon = (await _map.GetNearbyPokemonClosestFirst()).DistinctBy(i => i.SpawnPointId).ToList();
             foreach (var mapPokemon in pokemon)
@@ -242,40 +250,45 @@ namespace PokemonGo.Haxton.Bot.Bot
                 var encounter = await _encounter.EncounterPokemonAsync(mapPokemon);
                 if (encounter.Status == EncounterResponse.Types.Status.EncounterSuccess)
                 {
-                    actionList.Add(new Task(async () =>
+                    actionList.Add(async () =>
                     {
                         try
                         {
                             await _encounter.CatchPokemon(encounter, mapPokemon);
                         }
-                        catch (Exception)
+                        catch (Exception ex)
                         {
+                            logger.Error(ex, "Unable to catch pokemon");
                         }
-                    }));
+                    });
                 }
             }
             return actionList;
         }
 
+        private async Task<Action> CatchLurePokemon(FortData fortData)
+        {
+            Action returnAction = () => { };
+            if (fortData?.LureInfo != null && fortData.LureInfo.ActivePokemonId != PokemonId.Missingno)
+            {
+                var encounterId = fortData.LureInfo.EncounterId;
+                var encounter = await _encounter.EncounterPokemonLure(encounterId, fortData.Id);
+                if (encounter.Result == DiskEncounterResponse.Types.Result.Success)
+                {
+                    returnAction =
+                        async () =>
+                        {
+                            await
+                                _encounter.CatchPokemon(encounterId, fortData.Id, encounter,
+                                    encounter.PokemonData.PokemonId);
+                        };
+                }
+            }
+            return returnAction;
+        }
+
         //private async Task CatchNearbyPokemon(FortData fortData, bool isSniping)
         //{
-        //    var pokemon = (await _map.GetNearbyPokemonClosestFirst()).DistinctBy(i => i.SpawnPointId).ToList();
-        //    if (pokemon.Any())
-        //    {
-        //        var pokemonList = string.Join(", ", pokemon.Select(x => x.PokemonId).ToArray());
-        //        logger.Info($"{pokemon.Count()} Pokemon found: {pokemonList}");
-        //    }
-        //    if (fortData?.LureInfo != null && fortData.LureInfo.ActivePokemonId != PokemonId.Missingno)
-        //    {
-        //        var encounterId = fortData.LureInfo.EncounterId;
-        //        var encounter = await _encounter.EncounterPokemonLure(encounterId, fortData.Id);
-        //        if (encounter.Result == DiskEncounterResponse.Types.Result.Success)
-        //        {
-        //            if (isSniping)
-        //                await _navigation.TeleportToPokestop(fortData);
-        //            await _encounter.CatchPokemon(encounterId, fortData.Id, encounter, encounter.PokemonData.PokemonId);
-        //        }
-        //    }
         //    foreach (var mapPokemon in pokemon)
         //    {
         //        if (_settings.UsePokemonToNotCatchFilter && _settings.PokemonsNotToCatch.Contains(mapPokemon.PokemonId))

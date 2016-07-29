@@ -23,7 +23,7 @@ namespace PokemonGo.Haxton.Bot.Inventory
         DateTime LastInventoryCachcedDate { get; set; }
         IEnumerable<PlayerStats> PlayerStats { get; }
         IEnumerable<PokemonData> Pokemon { get; }
-        IEnumerable<PokemonFamily> PokemonFamilies { get; }
+        IEnumerable<Candy> PokemonFamilies { get; }
         IEnumerable<PokemonSettings> PokemonSettings { get; }
         bool ShouldUpdateInventory { get; set; }
 
@@ -107,9 +107,9 @@ namespace PokemonGo.Haxton.Bot.Inventory
                 CachedInventory.InventoryDelta.InventoryItems.Select(x => x.InventoryItemData?.PokemonData)
                     .Where(t => t?.PokemonId > 0);
 
-        public IEnumerable<PokemonFamily> PokemonFamilies
+        public IEnumerable<Candy> PokemonFamilies
             =>
-                CachedInventory.InventoryDelta.InventoryItems.Select(x => x.InventoryItemData?.PokemonFamily)
+                CachedInventory.InventoryDelta.InventoryItems.Select(x => x.InventoryItemData?.Candy)
                     .Where(t => t?.FamilyId != PokemonFamilyId.FamilyUnset);
 
         public IEnumerable<PokemonSettings> PokemonSettings
@@ -192,7 +192,7 @@ namespace PokemonGo.Haxton.Bot.Inventory
                     var settings = PokemonSettings.Single(x => x.PokemonId == pokemon.Key);
                     var familyCandy = PokemonFamilies.Single(x => settings.FamilyId == x.FamilyId);
                     var amountToSkip = _logicSettings.KeepMinDuplicatePokemon;
-                    var amountPossible = familyCandy.Candy / settings.CandyToEvolve;
+                    var amountPossible = familyCandy.Candy_ / settings.CandyToEvolve;
 
                     if (settings.CandyToEvolve > 0 && amountPossible > amountToSkip)
                         amountToSkip = amountPossible;
@@ -289,14 +289,14 @@ namespace PokemonGo.Haxton.Bot.Inventory
                 if (_logicSettings.EvolveAllPokemonAboveIv)
                 {
                     if (PokemonInfo.CalculatePokemonPerfection(pokemon) >= _logicSettings.EvolveAboveIvValue &&
-                        familyCandy.Candy - pokemonCandyNeededAlready > settings.CandyToEvolve)
+                        familyCandy.Candy_ - pokemonCandyNeededAlready > settings.CandyToEvolve)
                     {
                         pokemonToEvolve.Add(pokemon);
                     }
                 }
                 else
                 {
-                    if (familyCandy.Candy - pokemonCandyNeededAlready > settings.CandyToEvolve)
+                    if (familyCandy.Candy_ - pokemonCandyNeededAlready > settings.CandyToEvolve)
                     {
                         pokemonToEvolve.Add(pokemon);
                     }
