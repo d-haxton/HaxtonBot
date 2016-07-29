@@ -210,9 +210,7 @@ namespace PokemonGo.Haxton.Bot.Bot
         {
             var currentLat = _navigation.CurrentLatitude;
             var currentLong = _navigation.CurrentLongitude;
-            var basePokemon = (await CatchBurstPokemon(currentLat, currentLong));
-            await _navigation.TeleportToLocation(currentLat, currentLong);
-            basePokemon.ForEach(x => x.Invoke());
+            var basePokemon = (await CatchBurstPokemon(currentLat, currentLong)).ToList();
             //basePokemon.ForEach(x => x.Start());
             //Task.WaitAll(basePokemon.ToArray());
 
@@ -222,10 +220,16 @@ namespace PokemonGo.Haxton.Bot.Bot
             var br = await CatchBurstPokemon(currentLat - .002, currentLong - .002);
             await _navigation.TeleportToLocation(currentLat, currentLong);
 
-            tl.ForEach(x => x.Invoke());
-            bl.ForEach(x => x.Invoke());
-            tr.ForEach(x => x.Invoke());
-            br.ForEach(x => x.Invoke());
+            var actionList = basePokemon;
+            basePokemon.AddRange(tl);
+            basePokemon.AddRange(bl);
+            basePokemon.AddRange(tr);
+            basePokemon.AddRange(br);
+            foreach (var action in actionList)
+            {
+                action.Invoke();
+                await Task.Delay(1500);
+            }
 
             //logger.Info($"Burst mode found {actionList.Count} total pokemon. {actionList.Count - basePokemon.Count} extra from burst");
 

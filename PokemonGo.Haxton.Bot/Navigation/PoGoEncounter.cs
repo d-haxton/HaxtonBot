@@ -77,8 +77,8 @@ namespace PokemonGo.Haxton.Bot.Navigation
         {
             CatchPokemonResponse caughtPokemonResponse;
             var attempts = 0;
-            var r = new Random((int)DateTime.Now.Ticks);
-            var waitTime = r.Next(100, 3000);
+            //var r = new Random((int)DateTime.Now.Ticks);
+            //var waitTime = r.Next(100, 3000);
             do
             {
                 var probability = encounter?.CaptureProbability?.CaptureProbability_?.FirstOrDefault();
@@ -96,8 +96,8 @@ namespace PokemonGo.Haxton.Bot.Navigation
                 //var distance = LocationUtils.CalculateDistanceInMeters(_navigation.CurrentLatitude,
                 //    _navigation.CurrentLongitude, pokemon.Latitude, pokemon.Longitude);
 
-                lock (lockObject)
-                    Thread.Sleep(waitTime);
+                //lock (lockObject)
+                //    Thread.Sleep(waitTime);
                 caughtPokemonResponse =
                     await _apiEncounter.CatchPokemon(pokemon.EncounterId, pokemon.SpawnPointId, pokeball);
                 logger.Info($"[{caughtPokemonResponse.Status} - {attempts}] {pokemon.PokemonId} {Math.Round(PokemonInfo.CalculatePokemonPerfection(encounter?.WildPokemon?.PokemonData), 1)}% perfect. {encounter?.WildPokemon?.PokemonData?.Cp} CP. Probabilty: {Math.Round((double)probability * 100, 1)} with ball: {pokeball}");
