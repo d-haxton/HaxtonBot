@@ -67,7 +67,7 @@ namespace PokemonGo.Haxton.Bot.Navigation
 
                 caughtPokemonResponse =
                     await _apiEncounter.CatchPokemon(encounterId, id, pokeball);
-                logger.Info($"[{caughtPokemonResponse.Status} - {attempts}] {pokemonId} encountered. {PokemonInfo.CalculatePokemonPerfection(encounter?.PokemonData)}% perfect. {encounter?.PokemonData?.Cp} CP. Probabilty: {probability}");
+                logger.Info($"[{caughtPokemonResponse.Status} - {attempts}] {pokemonId} encountered. {PokemonInfo.CalculatePokemonPerfection(encounter?.PokemonData)}% perfect. {encounter?.PokemonData?.Cp} CP. Probability: {probability}");
                 attempts++;
             } while (caughtPokemonResponse.Status == CatchPokemonResponse.Types.CatchStatus.CatchMissed ||
                      caughtPokemonResponse.Status == CatchPokemonResponse.Types.CatchStatus.CatchEscape);
