@@ -1,4 +1,4 @@
-using MoreLinq;
+﻿using MoreLinq;
 using NLog;
 using POGOProtos.Enums;
 using POGOProtos.Inventory.Item;
@@ -42,6 +42,7 @@ namespace PokemonGo.Haxton.Bot.Bot
         public bool ShouldEvolvePokemon { get; set; }
         public bool ShouldTransferPokemon { get; set; }
         public bool isSniping { get; private set; }
+        public KeyValuePair<double,double> SnipeLoc { get; private set; }
 
         public PoGoBot(IPoGoNavigation navigation, IPoGoInventory inventory, IPoGoEncounter encounter, IPoGoSnipe snipe, IPoGoFort fort, IPoGoMap map, ILogicSettings settings)
         {
@@ -99,8 +100,9 @@ namespace PokemonGo.Haxton.Bot.Bot
                 {
                     if (_snipe.SnipeLocations.TryTake(out loc))
                     {
-                        logger.Info($"Sniping pokemon at {loc.Key}, {loc.Value}");
+                        logger.Info($"Initiating snipe at {loc.Key}, {loc.Value}");
                         await _navigation.TeleportToLocation(loc.Key, loc.Value);
+                        SnipeLoc = loc;
                         isSniping = true;
                     }
                 }
@@ -170,8 +172,9 @@ namespace PokemonGo.Haxton.Bot.Bot
                     await _fort.SearchFort(closestPokestop.Id, closestPokestop.Latitude, closestPokestop.Longitude);
                 if (pokestopBooty.ExperienceAwarded > 0)
                 {
-                    logger.Info(
-                        $"[{numberOfPokestopsVisited++}] Pokestop rewarded us with {pokestopBooty.ExperienceAwarded} exp. {pokestopBooty.GemsAwarded} gems. {StringUtils.GetSummedFriendlyNameOfItemAwardList(pokestopBooty.ItemsAwarded)}.");
+                    logger.Info($"[{numberOfPokestopsVisited++}] Pokestop awarded {pokestopBooty.ExperienceAwarded} XP."
+                              + $" {pokestopBooty.GemsAwarded} Gems."
+                              + $" {StringUtils.GetSummedFriendlyNameOfItemAwardList(pokestopBooty.ItemsAwarded)}");
                     //_stats.ExperienceSinceStarted += pokestopBooty.ExperienceAwarded;
                     //_stats.
                 }
@@ -258,13 +261,13 @@ namespace PokemonGo.Haxton.Bot.Bot
                     {
                         try
                         {
-                            if (isSniping)
-                                logger.Warn($"Sniping {encounter.WildPokemon.PokemonData.PokemonId}");
-                            await _encounter.CatchPokemon(encounter, mapPokemon);
+                            //if (isSniping)
+                            //    logger.Warn($"Sniping {encounter.WildPokemon.PokemonData.PokemonId} @ {SnipeLoc.Key}, {SnipeLoc.Value}.");
+                            await _encounter.CatchPokemon(encounter, mapPokemon, isSniping);
                         }
                         catch (Exception ex)
                         {
-                            logger.Error(ex, "Unable to catch pokemon");
+                            logger.Error(ex, "Unable to catch Pokémon");
                         }
                     });
                 }
@@ -285,8 +288,7 @@ namespace PokemonGo.Haxton.Bot.Bot
                         async () =>
                         {
                             await
-                                _encounter.CatchPokemon(encounterId, fortData.Id, encounter,
-                                    encounter.PokemonData.PokemonId);
+                                _encounter.CatchPokemon(encounterId, fortData.Id, encounter, encounter.PokemonData.PokemonId);
                         };
                 }
             }
@@ -329,7 +331,7 @@ namespace PokemonGo.Haxton.Bot.Bot
                     {
                         continue;
                     }
-                    logger.Info($"Transferring pokemon {pokemonData.PokemonId} with cp {pokemonData.Cp}.");
+                    logger.Info($"Transferring {pokemonData.PokemonId}. {pokemonData.Cp} CP.");
                     await _inventory.TransferPokemon(pokemonData.Id);
 
                     //var bestPokemon = _settings.PrioritizeIvOverCp
@@ -345,7 +347,7 @@ namespace PokemonGo.Haxton.Bot.Bot
         {
             if (_settings.UseLuckyEggsWhileEvolving)
             {
-                logger.Info("Using lucky egg.");
+                logger.Info("Using Lucky Egg.");
                 LuckyEgg();
             }
             var list = _settings.PokemonsToEvolve;
@@ -358,12 +360,12 @@ namespace PokemonGo.Haxton.Bot.Bot
             {
                 try
                 {
-                    logger.Info($"Evolving pokemon {p.PokemonId} with cp {p.Cp}.");
+                    logger.Info($"Evolving Pokémon {p.PokemonId}. {p.Cp} CP.");
                     await _inventory.EvolvePokemon(p.Id);
                 }
                 catch (Exception ex)
                 {
-                    logger.Warn(ex, "Failed evolving egg");
+                    logger.Warn(ex, "Exception occurred while evolving Pokémon");
                 }
             });
         }
@@ -380,11 +382,11 @@ namespace PokemonGo.Haxton.Bot.Bot
 
                 if (luckyEgg == null || luckyEgg.Count <= 0)
                     return;
-                logger.Info($"Lucky egg used. {luckyEgg.Count} remaining");
+                logger.Info($"Lucky Egg used. {luckyEgg.Count} remaining");
                 await _inventory.UseLuckyEgg();
                 await Task.Delay(2000);
             }
-            logger.Info("Lucky egg not used. Still have one in effect.");
+            logger.Info("Lucky Egg not used. Still have one in effect.");
         }
 
         private async Task RecycleItemsTask()
@@ -402,7 +404,7 @@ namespace PokemonGo.Haxton.Bot.Bot
                     }
                     catch (Exception ex)
                     {
-                        logger.Warn(ex, "Failed recyclying items.");
+                        logger.Warn(ex, "Failed recycling items.");
                     }
                 });
                 await Task.Delay(30000);
