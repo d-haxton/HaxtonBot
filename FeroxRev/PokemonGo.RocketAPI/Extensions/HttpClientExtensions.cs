@@ -3,6 +3,7 @@ using POGOProtos.Networking.Envelopes;
 using PokemonGo.RocketAPI.Exceptions;
 using System.Diagnostics;
 using System.Net.Http;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace PokemonGo.RocketAPI.Extensions
@@ -16,6 +17,7 @@ namespace PokemonGo.RocketAPI.Extensions
             Debug.WriteLine($"Requesting {typeof(TResponsePayload).Name}");
             var response = await PostProto<TRequest>(client, url, requestEnvelope);
 
+            Thread.Sleep(200);
             if (response.Returns.Count == 0)
                 return new TResponsePayload();
 

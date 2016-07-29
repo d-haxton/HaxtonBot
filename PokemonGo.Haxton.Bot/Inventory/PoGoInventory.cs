@@ -64,6 +64,8 @@ namespace PokemonGo.Haxton.Bot.Inventory
         private readonly IApiDownload _apiDownload;
         private readonly IApiInventory _apiInventory;
         private readonly ILogicSettings _logicSettings;
+        private GetInventoryResponse _cachedInventory;
+        private DownloadItemTemplatesResponse _cachedItemTemplates;
 
         public PoGoInventory(IApiInventory apiInventory, IApiDownload apiDownload, ILogicSettings logicSettings)
         {
@@ -73,13 +75,20 @@ namespace PokemonGo.Haxton.Bot.Inventory
 
             ShouldUpdateInventory = true;
 
-            Task.Run(RequestInventory).GetAwaiter().GetResult();
             Task.Run(UpdateInventory);
         }
 
-        public GetInventoryResponse CachedInventory { get; set; }
+        public GetInventoryResponse CachedInventory
+        {
+            get { return _cachedInventory?.InventoryDelta?.InventoryItems?.Any() != null ? _cachedInventory : new GetInventoryResponse() { InventoryDelta = new InventoryDelta() { InventoryItems = { new InventoryItem() { InventoryItemData = new InventoryItemData() { Item = new ItemData() } } } } }; }
+            set { _cachedInventory = value; }
+        }
 
-        public DownloadItemTemplatesResponse CachedItemTemplates { get; set; }
+        public DownloadItemTemplatesResponse CachedItemTemplates
+        {
+            get { return _cachedItemTemplates?.ItemTemplates?.Any() != null ? _cachedItemTemplates : new DownloadItemTemplatesResponse(); }
+            set { _cachedItemTemplates = value; }
+        }
 
         public IEnumerable<ItemData> Items
                     =>
@@ -265,11 +274,11 @@ namespace PokemonGo.Haxton.Bot.Inventory
             var pokemonToEvolve = new List<PokemonData>();
             foreach (var pokemon in pokemons)
             {
-                var settings = PokemonSettings.Where(t => t != null).Single(x => x.PokemonId == pokemon.PokemonId);
-                var familyCandy = PokemonFamilies.Where(t => t != null).Single(x => settings.FamilyId == x.FamilyId);
+                var settings = PokemonSettings.Where(t => t != null).SingleOrDefault(x => x.PokemonId == pokemon.PokemonId);
+                var familyCandy = PokemonFamilies.Where(t => t != null).SingleOrDefault(x => settings?.FamilyId == x.FamilyId);
 
                 //Don't evolve if we can't evolve it
-                if (settings.EvolutionIds.Count == 0)
+                if (settings == null || familyCandy == null || settings.EvolutionIds.Count == 0)
                     continue;
 
                 var pokemonCandyNeededAlready =
@@ -301,18 +310,20 @@ namespace PokemonGo.Haxton.Bot.Inventory
         {
             while (ShouldUpdateInventory)
             {
-                await RequestInventory();
+                var inventory = await RequestInventory();
+                if (inventory.InventoryDelta?.InventoryItems != null && inventory.Success)
+                    CachedInventory = inventory;
+                CachedItemTemplates = await _apiDownload.GetItemTemplates();
                 await Task.Delay(30000);
             }
         }
 
-        private async Task RequestInventory()
+        private async Task<GetInventoryResponse> RequestInventory()
         {
+            await Task.Delay(1500);
             logger.Info($"Updating inventory at {DateTime.Now}");
             var inventory = await _apiInventory.GetInventory();
-            if (inventory.InventoryDelta?.InventoryItems != null)
-                CachedInventory = inventory;
-            CachedItemTemplates = await _apiDownload.GetItemTemplates();
+            return inventory;
         }
     }
 }
