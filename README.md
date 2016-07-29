@@ -6,7 +6,7 @@
 <!-- disclaimer -->
 ![alt text][1.1] <strong><em> The contents of this repo are a proof of concept and are for educational use only </em></strong>![alt text][1.1]<br/>
 
-Discord: https://discord.gg/CA8SeAD
+Discord: https://discord.gg/Xt5JnHS
 
 Donate: https://donate.doctorswithoutborders.org/onetime.cfm
 
