@@ -99,8 +99,6 @@ namespace PokemonGo.Haxton.Bot.Bot
                 {
                     if (_snipe.SnipeLocations.TryTake(out loc))
                     {
-                        logger.Info($"Sniping pokemon at {loc.Key}, {loc.Value}");
-                        await _navigation.TeleportToLocation(loc.Key, loc.Value);
                         isSniping = true;
                     }
                 }
@@ -258,6 +256,8 @@ namespace PokemonGo.Haxton.Bot.Bot
                     {
                         try
                         {
+                            if (isSniping)
+                                logger.Warn($"Sniping {encounter.WildPokemon.PokemonData.PokemonId}");
                             await _encounter.CatchPokemon(encounter, mapPokemon);
                         }
                         catch (Exception ex)
