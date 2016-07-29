@@ -14,19 +14,25 @@ namespace PokemonGo.RocketAPI.Extensions
             string url, RequestEnvelope requestEnvelope) where TRequest : IMessage<TRequest>
             where TResponsePayload : IMessage<TResponsePayload>, new()
         {
-            Debug.WriteLine($"Requesting {typeof(TResponsePayload).Name}");
-            var response = await PostProto<TRequest>(client, url, requestEnvelope);
+            var attempts = 0;
+            ResponseEnvelope response;
+            TResponsePayload parsedPayload;
+            do
+            {
+                Debug.WriteLine($"Requesting {typeof(TResponsePayload).Name}");
+                Thread.Sleep(50);
+                response = await PostProto<TRequest>(client, url, requestEnvelope);
 
-            Thread.Sleep(200);
-            if (response.Returns.Count == 0)
+                //Decode payload
+                //todo: multi-payload support
+                attempts++;
+            } while (response.Returns.Count == 0 && attempts < 10);
+            if (attempts >= 10)
                 return new TResponsePayload();
 
-            //Decode payload
-            //todo: multi-payload support
             var payload = response.Returns[0];
-            var parsedPayload = new TResponsePayload();
+            parsedPayload = new TResponsePayload();
             parsedPayload.MergeFrom(payload);
-
             return parsedPayload;
         }
 
