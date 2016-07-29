@@ -2,6 +2,7 @@
 using PokemonGo.RocketAPI.Enums;
 using System;
 using System.Configuration;
+using System.Globalization;
 using System.IO;
 
 namespace PokemonGo.Haxton.Bot.Settings
@@ -12,9 +13,9 @@ namespace PokemonGo.Haxton.Bot.Settings
         {
             AuthType =
                 (AuthType)Enum.Parse(typeof(AuthType), ConfigurationManager.AppSettings["AccountType"]);
-            DefaultLatitude = Convert.ToDouble(ConfigurationManager.AppSettings["DefaultLatitude"]);
-            DefaultLongitude = Convert.ToDouble(ConfigurationManager.AppSettings["DefaultLongitude"]);
-            DefaultAltitude = Convert.ToDouble(ConfigurationManager.AppSettings["DefaultAltitude"]);
+            DefaultLatitude = Convert.ToDouble(ConfigurationManager.AppSettings["DefaultLatitude"], CultureInfo.InvariantCulture);
+            DefaultLongitude = Convert.ToDouble(ConfigurationManager.AppSettings["DefaultLongitude"], CultureInfo.InvariantCulture);
+            DefaultAltitude = Convert.ToDouble(ConfigurationManager.AppSettings["DefaultAltitude"], CultureInfo.InvariantCulture);
             PtcUsername = ConfigurationManager.AppSettings["PtcUsername"];
             PtcPassword = ConfigurationManager.AppSettings["PtcPassword"];
 

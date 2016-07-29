@@ -3,6 +3,7 @@ using POGOProtos.Inventory.Item;
 using System;
 using System.Collections.Generic;
 using System.Configuration;
+using System.Globalization;
 using System.IO;
 using System.Net.Http.Headers;
 
@@ -41,8 +42,8 @@ namespace PokemonGo.Haxton.Bot.Settings
             foreach (var s in text)
             {
                 var splitLines = s.Split(',');
-                var x = double.Parse(splitLines[0]);
-                var y = double.Parse(splitLines[1]);
+                var x = double.Parse(splitLines[0], CultureInfo.InvariantCulture);
+                var y = double.Parse(splitLines[1], CultureInfo.InvariantCulture);
                 var kvp = new KeyValuePair<double, double>(x, y);
                 list.Add(kvp);
             }
