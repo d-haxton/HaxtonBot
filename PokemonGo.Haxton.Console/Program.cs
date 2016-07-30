@@ -38,6 +38,7 @@ namespace PokemonGo.Haxton.Console
             {
                 try
                 {
+                    List<Task> currentTasks = new List<Task>(); 
                     container = new Container(_ =>
                     {
                         _.For<IApiBaseRpc>().Use<ApiBaseRpc>().Singleton();
@@ -64,7 +65,7 @@ namespace PokemonGo.Haxton.Console
                         _.For<ISettings>().Use<Settings>().Singleton();
                         _.For<ILogicSettings>().Use<LogicSettings>().Singleton();
                     });
-                    RunTask(_cancelTokenSource.Token);
+                    currentTasks.Add(RunTask(_cancelTokenSource.Token));
                     while (_LoggedIn == false)
                     {
                         Thread.Sleep(100);
@@ -73,30 +74,8 @@ namespace PokemonGo.Haxton.Console
                     {
                         continue;
                     }
-                    var snipe = container.GetAllInstances<IPoGoSnipe>().ToList();
-                    while (ShouldRun)
-                    {
-                        try
-                        {
-                            var input = System.Console.ReadLine();
-                            if (input == "exit")
-                                ShouldRun = false;
-                            var split = input?.Split(',');
-                            if (split != null)
-                            {
-                                var x = double.Parse(split[0], CultureInfo.InvariantCulture);
-                                var y = double.Parse(split[1], CultureInfo.InvariantCulture);
-                                foreach (var poGoSnipe in snipe)
-                                {
-                                    poGoSnipe.AddNewSnipe(x, y);
-                                }
-                            }
-                        }
-                        catch (Exception ex)
-                        {
-                            System.Console.WriteLine("Exception reading from console: " + ex.Message);
-                        }
-                    }
+                    currentTasks.Add(Task.Run(async () => { await handleConsoleInput(_cancelTokenSource.Token); }, _cancelTokenSource.Token));
+                    Task.WaitAny(currentTasks.ToArray());
                 }
                 catch (AggregateException e)
                 {
@@ -123,12 +102,11 @@ namespace PokemonGo.Haxton.Console
                     _cancelTokenSource = new CancellationTokenSource();
                 }
             }
-            System.Console.Read();
         }
 
-        private static void RunTask(CancellationToken _token)
+        private static Task RunTask(CancellationToken _token)
         {
-            Task.Run(() =>
+            return Task.Run(() =>
             {
                 while (!_token.IsCancellationRequested)
                 {
@@ -157,7 +135,7 @@ namespace PokemonGo.Haxton.Console
                     }
                     finally
                     {
-                        logger.Fatal("Task crashed, attempting to restart");
+                        logger.Fatal("Task crashed or cancelled");
                         // for the case some tasks crashed
                         if (_token.CanBeCanceled)
                         {
@@ -176,6 +154,43 @@ namespace PokemonGo.Haxton.Console
             {
                 System.Console.Title = stats.statistics();
                 await Task.Delay(30000);
+            }
+            _token.ThrowIfCancellationRequested();
+        }
+
+        private static async Task handleConsoleInput(CancellationToken _token)
+        {
+            var snipe = container.GetAllInstances<IPoGoSnipe>().ToList();
+            while (ShouldRun && !_cancelTokenSource.Token.IsCancellationRequested)
+            {
+                try
+                {
+                    if( System.Console.KeyAvailable)
+                    {
+                        var input = System.Console.ReadLine();
+                        if (input == "exit")
+                        {
+                            ShouldRun = false;
+                            _cancelTokenSource.Cancel();
+                            logger.Warn("Exiting...");
+                            break;
+                        }
+                        var split = input?.Split(',');
+                        if (split != null)
+                        {
+                            var x = double.Parse(split[0], CultureInfo.InvariantCulture);
+                            var y = double.Parse(split[1], CultureInfo.InvariantCulture);
+                            foreach (var poGoSnipe in snipe)
+                            {
+                                poGoSnipe.AddNewSnipe(x, y);
+                            }
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    System.Console.WriteLine("Exception reading from console: " + ex.Message);
+                }
             }
             _token.ThrowIfCancellationRequested();
         }
