@@ -11,6 +11,7 @@ using PokemonGo.Haxton.Bot.Utilities;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace PokemonGo.Haxton.Bot.Inventory
@@ -64,14 +65,16 @@ namespace PokemonGo.Haxton.Bot.Inventory
         private readonly IApiDownload _apiDownload;
         private readonly IApiInventory _apiInventory;
         private readonly ILogicSettings _logicSettings;
+        private readonly CancellationToken _token;
         private GetInventoryResponse _cachedInventory;
         private DownloadItemTemplatesResponse _cachedItemTemplates;
 
-        public PoGoInventory(IApiInventory apiInventory, IApiDownload apiDownload, ILogicSettings logicSettings)
+        public PoGoInventory(IApiInventory apiInventory, IApiDownload apiDownload, ILogicSettings logicSettings, CancellationToken token)
         {
             _apiInventory = apiInventory;
             _apiDownload = apiDownload;
             _logicSettings = logicSettings;
+            _token = token;
 
             ShouldUpdateInventory = true;
 
@@ -130,7 +133,11 @@ namespace PokemonGo.Haxton.Bot.Inventory
 
         public void RecycleItems(ItemId itemId, int amount)
         {
-            _apiInventory.RecycleItem(itemId, amount).GetAwaiter().GetResult();
+            RecycleInventoryItemResponse res = _apiInventory.RecycleItem(itemId, amount).GetAwaiter().GetResult();
+            if(res.Result != RecycleInventoryItemResponse.Types.Result.Success)
+            {
+                throw new Exception("Unable to recycle item");
+            }
         }
 
         public int GetAmountByType(ItemId type)
@@ -308,7 +315,7 @@ namespace PokemonGo.Haxton.Bot.Inventory
 
         private async Task UpdateInventory()
         {
-            while (ShouldUpdateInventory)
+            while (!_token.IsCancellationRequested && ShouldUpdateInventory)
             {
                 var inventory = await RequestInventory();
                 if (inventory.InventoryDelta?.InventoryItems != null && inventory.Success)
@@ -316,6 +323,7 @@ namespace PokemonGo.Haxton.Bot.Inventory
                 CachedItemTemplates = await _apiDownload.GetItemTemplates();
                 await Task.Delay(30000);
             }
+            _token.ThrowIfCancellationRequested();
         }
 
         private async Task<GetInventoryResponse> RequestInventory()

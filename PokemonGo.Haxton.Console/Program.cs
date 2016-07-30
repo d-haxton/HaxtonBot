@@ -24,125 +24,156 @@ namespace PokemonGo.Haxton.Console
     {
         private static Container container;
         private static readonly Logger logger = LogManager.GetCurrentClassLogger();
-        private static bool ShouldRun;
+        private static CancellationTokenSource _cancelTokenSource;
         private static bool _LoggedIn = false;
-        private static CancellationTokenSource _cancelToken;
+        private static bool ShouldRun;
         private static List<Task> task = null;
 
         [HandleProcessCorruptedStateExceptions]
         private static void Main(string[] args)
         {
-            System.AppDomain.CurrentDomain.UnhandledException += UnhandledExceptionTrapper;
-
-            _cancelToken = new CancellationTokenSource();
-
+            _cancelTokenSource = new CancellationTokenSource();
             ShouldRun = true;
-            RunTask();
-            while (_LoggedIn == false)
-            {
-                Thread.Sleep(100);
-            }
-            var snipe = container.GetAllInstances<IPoGoSnipe>().ToList();
             while (ShouldRun)
             {
                 try
                 {
-                    var input = System.Console.ReadLine();
-                    if (input == "exit")
-                        ShouldRun = false;
-                    var split = input?.Split(',');
-                    if (split != null)
+                    container = new Container(_ =>
                     {
-                        var x = double.Parse(split[0], CultureInfo.InvariantCulture);
-                        var y = double.Parse(split[1], CultureInfo.InvariantCulture);
-                        foreach (var poGoSnipe in snipe)
+                        _.For<IApiBaseRpc>().Use<ApiBaseRpc>().Singleton();
+                        _.For<IApiClient>().Use<ApiClient>().Singleton();
+                        _.For<IApiDownload>().Use<ApiDownload>().Singleton();
+                        _.For<IApiEncounter>().Use<ApiEncounter>().Singleton();
+                        _.For<IApiFort>().Use<ApiFort>().Singleton();
+                        _.For<IApiInventory>().Use<ApiInventory>().Singleton();
+                        _.For<IApiLogin>().Use<ApiLogin>().Singleton();
+                        _.For<IApiMap>().Use<ApiMap>().Singleton();
+                        _.For<IApiMisc>().Use<ApiMisc>().Singleton();
+                        _.For<IApiPlayer>().Use<ApiPlayer>().Singleton();
+
+                        _.For<IPoGoBot>().Use<PoGoBot>().Singleton();
+                        _.For<IPoGoInventory>().Use<PoGoInventory>().Ctor<CancellationToken>().Is(_cancelTokenSource.Token).Singleton();
+                        _.For<IPoGoEncounter>().Use<PoGoEncounter>().Singleton();
+                        _.For<IPoGoNavigation>().Use<PoGoNavigation>().Singleton();
+                        _.For<IPoGoMap>().Use<PoGoMap>().Singleton();
+                        _.For<IPoGoStatistics>().Use<PoGoStatistics>().Singleton();
+                        _.For<IPoGoSnipe>().Use<PoGoSnipe>().Singleton();
+                        _.For<IPoGoLogin>().Use<PoGoLogin>().Singleton();
+                        _.For<IPoGoFort>().Use<PoGoFort>().Singleton();
+
+                        _.For<ISettings>().Use<Settings>().Singleton();
+                        _.For<ILogicSettings>().Use<LogicSettings>().Singleton();
+                    });
+                    RunTask(_cancelTokenSource.Token);
+                    while (_LoggedIn == false)
+                    {
+                        Thread.Sleep(100);
+                    }
+                    if (_cancelTokenSource.Token.IsCancellationRequested)
+                    {
+                        continue;
+                    }
+                    var snipe = container.GetAllInstances<IPoGoSnipe>().ToList();
+                    while (ShouldRun)
+                    {
+                        try
                         {
-                            poGoSnipe.AddNewSnipe(x, y);
+                            var input = System.Console.ReadLine();
+                            if (input == "exit")
+                                ShouldRun = false;
+                            var split = input?.Split(',');
+                            if (split != null)
+                            {
+                                var x = double.Parse(split[0], CultureInfo.InvariantCulture);
+                                var y = double.Parse(split[1], CultureInfo.InvariantCulture);
+                                foreach (var poGoSnipe in snipe)
+                                {
+                                    poGoSnipe.AddNewSnipe(x, y);
+                                }
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            System.Console.WriteLine("Exception reading from console: " + ex.Message);
                         }
                     }
                 }
-                catch (Exception ex)
+                catch (AggregateException e)
                 {
-                    System.Console.WriteLine("Exception reading from console: " + ex.Message);
+                    logger.Fatal("\nAggregateException thrown with the following inner exceptions:");
+                    // Display information about each exception. 
+                    foreach (var v in e.InnerExceptions)
+                    {
+                        if (v is TaskCanceledException)
+                            logger.Fatal("   TaskCanceledException: Task {0}",
+                                              ((TaskCanceledException)v).Task.Id);
+                        else
+                            logger.Fatal("   Exception: {0}", v.GetType().Name);
+                    }
+                }
+                catch (OperationCanceledException ex)
+                {
+                    logger.Fatal(ex.ToString());
+                }
+                finally
+                {
+                    _cancelTokenSource.Cancel();
+                    _cancelTokenSource.Dispose();
+                    container.Dispose();
+                    _cancelTokenSource = new CancellationTokenSource();
                 }
             }
+            System.Console.Read();
         }
 
-        private static void RunTask()
+        private static void RunTask(CancellationToken _token)
         {
             Task.Run(() =>
             {
-                AppDomain.CurrentDomain.UnhandledException += UnhandledExceptionTrapper;
-                while (true)
+                while (!_token.IsCancellationRequested)
                 {
                     try
                     {
-                        container = new Container(_ =>
-                        {
-                            _.For<IApiBaseRpc>().Use<ApiBaseRpc>().Singleton();
-                            _.For<IApiClient>().Use<ApiClient>().Singleton();
-                            _.For<IApiDownload>().Use<ApiDownload>().Singleton();
-                            _.For<IApiEncounter>().Use<ApiEncounter>().Singleton();
-                            _.For<IApiFort>().Use<ApiFort>().Singleton();
-                            _.For<IApiInventory>().Use<ApiInventory>().Singleton();
-                            _.For<IApiLogin>().Use<ApiLogin>().Singleton();
-                            _.For<IApiMap>().Use<ApiMap>().Singleton();
-                            _.For<IApiMisc>().Use<ApiMisc>().Singleton();
-                            _.For<IApiPlayer>().Use<ApiPlayer>().Singleton();
-
-                            _.For<IPoGoBot>().Use<PoGoBot>().Singleton();
-                            _.For<IPoGoInventory>().Use<PoGoInventory>().Singleton();
-                            _.For<IPoGoEncounter>().Use<PoGoEncounter>().Singleton();
-                            _.For<IPoGoNavigation>().Use<PoGoNavigation>().Singleton();
-                            _.For<IPoGoMap>().Use<PoGoMap>().Singleton();
-                            _.For<IPoGoStatistics>().Use<PoGoStatistics>().Singleton();
-                            _.For<IPoGoSnipe>().Use<PoGoSnipe>().Singleton();
-                            _.For<IPoGoLogin>().Use<PoGoLogin>().Singleton();
-                            _.For<IPoGoFort>().Use<PoGoFort>().Singleton();
-
-                            _.For<ISettings>().Use<Settings>().Singleton();
-                            _.For<ILogicSettings>().Use<LogicSettings>().Singleton();
-
-                            //_.Scan(s =>
-                            //{
-                            //    s.SingleImplementationsOfInterface();
-                            //    s.AssemblyContainingType<IApiClient>();
-                            //    s.WithDefaultConventions();
-                            //});
-                        });
-
                         var login = container.GetInstance<IPoGoLogin>();
                         login.DoLogin();
                         var bot = container.GetInstance<IPoGoBot>();
-                        task = bot.Run();
-                        Task.Run(UpdateConsole);
+                        task = bot.Run(_token);
+                        task.Add(Task.Run(async () => { await UpdateConsole(_token); }, _token));
                         _LoggedIn = true;
                         Task.WaitAny(task.ToArray());
                     }
-                    catch (Exception ex)
+                    catch (AggregateException e)
                     {
-                        logger.Fatal(ex, "Fatal error, attempting to restart");
+                        logger.Fatal("\nAggregateException thrown with the following inner exceptions:");
+                        // Display information about each exception. 
+                        foreach (var v in e.InnerExceptions)
+                        {
+                            if (v is TaskCanceledException)
+                                logger.Fatal("   TaskCanceledException: Task {0}",
+                                                  ((TaskCanceledException)v).Task.Id);
+                            else
+                                logger.Fatal("   Exception: {0}", v.GetType().Name);
+                        }
+                    }
+                    finally
+                    {
+                        logger.Fatal("Task crashed, attempting to restart");
+                        // for the case some tasks crashed
+                        _token.ThrowIfCancellationRequested();
                     }
                 }
-            }, _cancelToken.Token);
+            }, _token);
         }
 
-        private static void UnhandledExceptionTrapper(object sender, UnhandledExceptionEventArgs e)
-        {
-            task?.ForEach(x => x.Dispose());
-            _cancelToken.Cancel();
-            _cancelToken = new CancellationTokenSource();
-            RunTask();
-        }
-
-        private static async Task UpdateConsole()
+        private static async Task UpdateConsole(CancellationToken _token)
         {
             var stats = container.GetInstance<IPoGoStatistics>();
-            while (true)
+            while (!_token.IsCancellationRequested)
             {
                 System.Console.Title = stats.statistics();
                 await Task.Delay(30000);
             }
+            _token.ThrowIfCancellationRequested();
         }
     }
 }
