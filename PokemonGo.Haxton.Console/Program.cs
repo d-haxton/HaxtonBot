@@ -159,6 +159,10 @@ namespace PokemonGo.Haxton.Console
                     {
                         logger.Fatal("Task crashed, attempting to restart");
                         // for the case some tasks crashed
+                        if (_token.CanBeCanceled)
+                        {
+                            _cancelTokenSource.Cancel();
+                        }
                         _token.ThrowIfCancellationRequested();
                     }
                 }
