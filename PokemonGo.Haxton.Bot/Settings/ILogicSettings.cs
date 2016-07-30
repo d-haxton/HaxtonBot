@@ -26,15 +26,19 @@ namespace PokemonGo.Haxton.Bot
         bool UseLuckyEggsWhileEvolving { get; }
         bool EvolveAllPokemonAboveIv { get; }
         float EvolveAboveIvValue { get; }
+		bool AutoSnipe { get; }
 
-        Dictionary<ItemId, int> ItemRecycleFilter { get; }
+		Dictionary<ItemId, int> ItemRecycleFilter { get; }
 
         ICollection<PokemonId> PokemonsToEvolve { get; }
 
         ICollection<PokemonId> PokemonsNotToTransfer { get; }
 
         ICollection<PokemonId> PokemonsNotToCatch { get; }
-        bool Teleport { get; set; }
+
+		ICollection<PokemonId> PokemonsNotToAutoSnipe { get; }
+
+		bool Teleport { get; set; }
         bool BurstMode { get; }
         IEnumerable<KeyValuePair<double, double>> LocationsToVisit { get; }
     }

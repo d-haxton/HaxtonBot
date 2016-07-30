@@ -1,5 +1,6 @@
 using MoreLinq;
 using NLog;
+using NLog.Fluent;
 using POGOProtos.Enums;
 using POGOProtos.Inventory.Item;
 using POGOProtos.Map.Fort;
@@ -22,14 +23,15 @@ namespace PokemonGo.Haxton.Bot.Bot
         bool ShouldEvolvePokemon { get; set; }
         bool ShouldTransferPokemon { get; set; }
 
-        List<Task> Run();
+		List<Task> Run();
     }
 
     public class PoGoBot : IPoGoBot
     {
         private static readonly Logger logger = LogManager.GetCurrentClassLogger();
+		private static List<string> previousFoundSnipes = new List<string>();
 
-        private DateTime LuckyEggUsed { get; set; }
+		private DateTime LuckyEggUsed { get; set; }
         private readonly IPoGoNavigation _navigation;
         private readonly IPoGoInventory _inventory;
         private readonly IPoGoEncounter _encounter;
@@ -41,9 +43,10 @@ namespace PokemonGo.Haxton.Bot.Bot
         public bool ShouldRecycleItems { get; set; }
         public bool ShouldEvolvePokemon { get; set; }
         public bool ShouldTransferPokemon { get; set; }
-        public bool isSniping { get; private set; }
+		public bool isSniping { get; private set; }
+		public bool isFindingAutoSnipeLocations { get; private set; }
 
-        public PoGoBot(IPoGoNavigation navigation, IPoGoInventory inventory, IPoGoEncounter encounter, IPoGoSnipe snipe, IPoGoFort fort, IPoGoMap map, ILogicSettings settings)
+		public PoGoBot(IPoGoNavigation navigation, IPoGoInventory inventory, IPoGoEncounter encounter, IPoGoSnipe snipe, IPoGoFort fort, IPoGoMap map, ILogicSettings settings)
         {
             _navigation = navigation;
             _inventory = inventory;
@@ -92,9 +95,16 @@ namespace PokemonGo.Haxton.Bot.Bot
             var numberOfPokestopsVisited = 0;
             var returnToStart = DateTime.Now;
             var pokestopList = (await _map.GetPokeStops()).Where(t => t.CooldownCompleteTimestampMs < DateTime.UtcNow.ToUnixTime()).ToList();
+
             while (true)
             {
                 var loc = new KeyValuePair<double, double>();
+
+				if (_settings.AutoSnipe && _snipe.SnipeLocations.Count <= 0 && !isFindingAutoSnipeLocations)
+				{
+					await FetchAutoSnipeLocations();
+                }
+
                 if (_snipe.SnipeLocations.Count > 0)
                 {
                     if (_snipe.SnipeLocations.TryTake(out loc))
@@ -269,6 +279,7 @@ namespace PokemonGo.Haxton.Bot.Bot
                     });
                 }
             }
+			isSniping = false;
             return actionList;
         }
 
@@ -407,6 +418,42 @@ namespace PokemonGo.Haxton.Bot.Bot
                 });
                 await Task.Delay(30000);
             }
+        }
+
+		private async Task FetchAutoSnipeLocations()
+		{
+			isFindingAutoSnipeLocations = true;
+            List<SnipeLocationInfo> totalSnipeLocations = await _snipe.FetchSnipeLocations();
+
+			if (totalSnipeLocations != null)
+			{
+				List<SnipeLocationInfo> filteredSnipeLocations = new List<SnipeLocationInfo>();
+
+				logger.Info($"Total snipes found: {totalSnipeLocations.Count}");
+
+				for (int i = 0; i < totalSnipeLocations.Count; i++)
+				{
+					var pokemonId = (PokemonId)Enum.Parse(typeof(PokemonId), totalSnipeLocations[i].name);
+					if (!_settings.PokemonsNotToAutoSnipe.Contains(pokemonId) && !previousFoundSnipes.Any(totalSnipeLocations[i].UniqueId.Contains))
+					{
+						filteredSnipeLocations.Add(totalSnipeLocations[i]);
+					}
+				}
+
+				logger.Info($"Filtered snipes found: {filteredSnipeLocations.Count}");
+				for (int i = 0; i < filteredSnipeLocations.Count; i++)
+				{
+					previousFoundSnipes.Add(filteredSnipeLocations[i].UniqueId);
+					string[] coords = filteredSnipeLocations[i].coords.Split(',');
+					logger.Info($"Added Snipe {i + 1}: {filteredSnipeLocations[i].name} at {filteredSnipeLocations[i].coords}");
+					_snipe.AddNewSnipe(coords);
+				}
+			} 
+			else 
+			{
+				logger.Warn($"Failed to fetch Auto Snipe locations from http://pokesnipers.com/api/v1/pokemon.json - Retrying...");
+			}
+			isFindingAutoSnipeLocations = false;
         }
     }
 }
