@@ -74,11 +74,11 @@ namespace PokemonGo.Haxton.Bot.Navigation
                     case "CatchEscape":  catchResult = "Broke free"; break;
                     case "CatchFlee":    catchResult = "      Fled"; break; }
 
-                var IVPadded = Math.Round(PokemonInfo.CalculatePokemonPerfection(encounter?.PokemonData), 2).ToString("0.00").PadLeft(5);
+                var IVPadded = Math.Round(PokemonInfo.CalculatePokemonPerfection(encounter?.PokemonData), 2).ToString("0.00").PadLeft(6);
 
                 logger.Info($"[{attempts} {catchResult}] {(pokemonId).ToString().PadLeft(13)}"
                             + $" {IVPadded} IV%."
-                            + $" {encounter?.PokemonData?.Cp.ToString().PadLeft(4)} CP. {Math.Round((double)probability * 100, 2).ToString("0.00").PadLeft(5)}% using {pokeball}.");
+                            + $" {encounter?.PokemonData?.Cp.ToString().PadLeft(4)} CP. {Math.Round((double)probability * 100, 2).ToString("0.00").PadLeft(6)}% using {pokeball}.");
 
                 attempts++;
             } while (caughtPokemonResponse.Status == CatchPokemonResponse.Types.CatchStatus.CatchMissed ||
@@ -121,21 +121,21 @@ namespace PokemonGo.Haxton.Bot.Navigation
                 var durationLeft = ((pokemon.ExpirationTimestampMs - DateTime.UtcNow.ToUnixTime()) / 1000 / 60 >= 0)
                                  ? ((pokemon.ExpirationTimestampMs - DateTime.UtcNow.ToUnixTime()) / 1000 / 60).ToString().PadLeft(2) + ":" + ((pokemon.ExpirationTimestampMs - DateTime.UtcNow.ToUnixTime()) / 1000 % 60).ToString().PadLeft(2,'0') + " left"
                                  : "   Expired";
-                var coordsPadded = ((pokemon.Latitude).ToString(CultureInfo.InvariantCulture).PadRight(16,'0') + "," + pokemon.Longitude.ToString(CultureInfo.InvariantCulture).PadRight(16,'0')).PadLeft(34);
-                var IVPadded = Math.Round(PokemonInfo.CalculatePokemonPerfection(encounter?.WildPokemon?.PokemonData), 2).ToString("0.00").PadLeft(5);
+                var coordsPadded = ((pokemon.Latitude).ToString(CultureInfo.InvariantCulture).PadRight(16,'0') + "," + pokemon.Longitude.ToString(CultureInfo.InvariantCulture).PadRight(16,'0')).PadLeft(35);
+                var IVPadded = Math.Round(PokemonInfo.CalculatePokemonPerfection(encounter?.WildPokemon?.PokemonData), 2).ToString("0.00").PadLeft(6);
 
                 if (isSniping || isHighPerfection) {
                     logger.Warn(  $"[{attempts} {catchResult}] {(pokemon.PokemonId).ToString().PadLeft(13)}"
                                 + $" {coordsPadded}"
                                 + $" {IVPadded} IV%."
-                                + $" {durationLeft}"
-                                + $" {encounter?.WildPokemon?.PokemonData?.Cp.ToString().PadLeft(4)} CP. {Math.Round((double)probability * 100, 2).ToString("0.00").PadLeft(5)}% using {pokeball}.");
+                                + $" {durationLeft}."
+                                + $" {encounter?.WildPokemon?.PokemonData?.Cp.ToString().PadLeft(4)} CP. {Math.Round((double)probability * 100, 2).ToString("0.00").PadLeft(6)}% using {pokeball}.");
                 } else {
                     logger.Info(  $"[{attempts} {catchResult}] {(pokemon.PokemonId).ToString().PadLeft(13)}"
                                 + $" {coordsPadded}"
                                 + $" {IVPadded} IV%."
                                 + $" {durationLeft}."
-                                + $" {encounter?.WildPokemon?.PokemonData?.Cp.ToString().PadLeft(4)} CP. {Math.Round((double)probability * 100, 2).ToString("0.00").PadLeft(5)}% using {pokeball}.");
+                                + $" {encounter?.WildPokemon?.PokemonData?.Cp.ToString().PadLeft(4)} CP. {Math.Round((double)probability * 100, 2).ToString("0.00").PadLeft(6)}% using {pokeball}.");
                 }
                 
                 attempts++;
