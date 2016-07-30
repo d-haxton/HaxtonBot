@@ -85,8 +85,8 @@ namespace PokemonGo.Haxton.Bot.Utilities
             int pokemonsCaptured = _currentPlayerStats.PokemonsCaptured - _initPlayerStats.PokemonsCaptured;
             // this is not working
             //int pokemonsTransfered = _currentPlayerStats.PokemonDeployed - _initPlayerStats.PokemonDeployed;
-            return $"{_currentPlayerStats.Level} (next level in {hoursTNL}h {minutesTNL}m |"
-                + $" {currentExperienceTNL}/{totalExperienceTNL} XP) {_playerName} - Runtime {runtime().ToString(@"dd\.hh\:mm\:ss")}"
+            return $"{_playerName} (next level in {hoursTNL}h {minutesTNL}m |"
+                + $" {currentExperienceTNL}/{totalExperienceTNL} XP) - Runtime {runtime().ToString(@"dd\.hh\:mm\:ss")}"
                 + $" - Lvl: {_currentPlayerStats.Level} | EXP/H: {experiencePerHour:0} | P/H: {(pokemonsCaptured / (runtime().TotalSeconds / 3600)):0}"
                 + $" | Stardust: {_totalStardust:0}";
         }
