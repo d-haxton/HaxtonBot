@@ -22,9 +22,7 @@ Shits quick yo.
 <br/>
 
 <h2><a name="credits">Credits</a></h2>
-Ferox API
+Ferox API<br/>
 Necro, for 90% of the code I deleted
 <br/>
 <hr/>
-
-I slapped your mother, in the mouth, with my penis.
