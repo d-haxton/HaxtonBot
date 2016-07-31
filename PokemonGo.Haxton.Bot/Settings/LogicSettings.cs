@@ -30,10 +30,12 @@ namespace PokemonGo.Haxton.Bot.Settings
             PokemonsToEvolve = GetPokemon("UserSettings\\PokemonToEvolve.cfg");
             PokemonsNotToTransfer = GetPokemon("UserSettings\\PokemonToKeep.cfg");
             PokemonsNotToCatch = GetPokemon("UserSettings\\PokemonToAvoid.cfg");
-            LocationsToVisit = GetLocations("UserSettings\\LocationsToCycle.cfg");
+			PokemonsNotToAutoSnipe = GetPokemon("UserSettings\\PokemonNotToAutoSnipe.cfg");
+			LocationsToVisit = GetLocations("UserSettings\\LocationsToCycle.cfg");
             BurstMode = Convert.ToBoolean(ConfigurationManager.AppSettings["UseBurstMode"]);
-            //
-        }
+			AutoSnipe = Convert.ToBoolean(ConfigurationManager.AppSettings["AutoSnipe"]);
+			//
+		}
 
         private IEnumerable<KeyValuePair<double, double>> GetLocations(string usersettingsLocationstocycleCfg)
         {
@@ -99,6 +101,8 @@ namespace PokemonGo.Haxton.Bot.Settings
         public ICollection<PokemonId> PokemonsToEvolve { get; }
         public ICollection<PokemonId> PokemonsNotToTransfer { get; }
         public ICollection<PokemonId> PokemonsNotToCatch { get; }
-        public bool Teleport { get; set; }
-    }
+		public ICollection<PokemonId> PokemonsNotToAutoSnipe { get; }
+		public bool Teleport { get; set; }
+		public bool AutoSnipe { get; set; }
+	}
 }
