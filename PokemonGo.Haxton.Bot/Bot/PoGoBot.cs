@@ -82,11 +82,12 @@ namespace PokemonGo.Haxton.Bot.Bot
 
         private async Task RemoveSoftBan(FortData closestPokestop)
         {
-            var pokestopBooty = await _fort.SearchFort(closestPokestop.Id, closestPokestop.Latitude, closestPokestop.Longitude);
-            while (pokestopBooty.Result == FortSearchResponse.Types.Result.Success)
+            FortSearchResponse pokestopBooty = null;
+            do
             {
                 pokestopBooty = await _fort.SearchFort(closestPokestop.Id, closestPokestop.Latitude, closestPokestop.Longitude);
             }
+            while (pokestopBooty.Result == FortSearchResponse.Types.Result.Success);
         }
 
         private async Task FarmPokestopsTask()
@@ -191,6 +192,7 @@ namespace PokemonGo.Haxton.Bot.Bot
                     var burst = await CatchBurstPokemon(loc.Key, loc.Value);
                     await _navigation.TeleportToLocation(x, y);
                     burst.ForEach(a => a.Invoke());
+                    isSniping = false;
                 }
                 else if (_settings.BurstMode)
                 {
