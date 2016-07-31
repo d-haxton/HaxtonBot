@@ -13,115 +13,100 @@ namespace PokemonGo.Haxton.Bot.Utilities
 {
     public interface IPoGoStatistics
     {
-        void UpdateStats();
-
-        string GetCurrentInfo();
+        string statistics();
     }
 
     public class PoGoStatistics : IPoGoStatistics
     {
         private readonly IPoGoInventory _inventory;
         private readonly IApiPlayer _player;
-        private DateTime _initSessionDateTime = DateTime.Now;
-
-        private string _playerName;
-        private int _currentLevelInfos;
-        private PlayerStats LoginStats { get; set; }
-
-        public long ExperienceSinceStarted { get; set; }
-        public int ItemsRecycledSinceStarted { get; set; }
-        public int PokemonCaughtSinceStarted { get; set; }
-        public int PokemonTransferedSinceStarted { get; set; }
-        public int TotalStardust { get; set; }
+        private DateTime _initSessionDateTime;
+        private PlayerStats _initPlayerStats;
+        private PlayerStats _currentPlayerStats;
+        private String _playerName = null;
+        private int _totalStardust;
 
         public PoGoStatistics(IPoGoInventory inventory, IApiPlayer player)
         {
             _inventory = inventory;
             _player = player;
-            Task.Run(UpdateStardust);
+            _initSessionDateTime = DateTime.Now;
+            Task.Run(getInitialStats);
+            Task.Run(UpdateStats);
         }
 
-        private async Task UpdateStardust()
+        private async Task getInitialStats()
+        {
+            do
+            {
+                _initPlayerStats = _inventory.PlayerStats.FirstOrDefault();
+                _currentPlayerStats = _initPlayerStats;
+                await Task.Delay(1000);
+            }
+            while (_initPlayerStats == null);
+        }
+
+        private async Task UpdateStats()
         {
             while (true)
             {
                 var player = (await _player.GetPlayer()).PlayerData;
-                _playerName = player?.Username;
-                TotalStardust = player?.Currencies.FirstOrDefault(t => t.Name == "STARDUST")?.Amount ?? 0;
+                if (_playerName == null)
+                {
+                    _playerName = player?.Username;
+                }
+                _totalStardust = player?.Currencies.FirstOrDefault(t => t.Name == "STARDUST")?.Amount ?? 0;
+                _currentPlayerStats = _inventory.PlayerStats.FirstOrDefault();
                 await Task.Delay(15000);
             }
         }
 
-        public void UpdateStats()
+        public string statistics()
         {
-            GetCurrentInfo();
-        }
-
-        private string FormatRuntime()
-        {
-            return (DateTime.Now - _initSessionDateTime).ToString(@"dd\.hh\:mm\:ss");
-        }
-
-        public string GetCurrentInfo()
-        {
-            var stats = _inventory.PlayerStats;
-            var output = string.Empty;
-            PlayerStats stat = stats.FirstOrDefault();
-            if (stat != null)
+            if (_initPlayerStats == null)
             {
-                if (LoginStats == null)
-                {
-                    _initSessionDateTime = DateTime.Now;
-                    LoginStats = stat;
-                }
-
-                ExperienceSinceStarted = (stat.Experience - LoginStats.Experience);
-                PokemonCaughtSinceStarted = (stat.PokemonsCaptured - LoginStats.PokemonsCaptured);
-                PokemonTransferedSinceStarted = (stat.PokemonDeployed - LoginStats.PokemonDeployed);
-                var ep = stat.NextLevelXp - stat.PrevLevelXp - (stat.Experience - stat.PrevLevelXp);
-                var time = Math.Round(ep / (ExperienceSinceStarted / GetRuntime()), 2);
-                var hours = 0.00;
-                var minutes = 0.00;
-                if (double.IsInfinity(time) == false && time > 0)
-                {
-                    time = Convert.ToDouble(TimeSpan.FromHours(time).ToString("h\\.mm"), CultureInfo.InvariantCulture);
-                    hours = Math.Truncate(time);
-                    minutes = Math.Round((time - hours) * 100);
-                }
-                _currentLevelInfos = stat.Level;
-                output =
-                    $"{stat.Level} (next level in {hours}h {minutes}m | {stat.Experience - stat.PrevLevelXp - GetXpDiff(stat.Level)}/{stat.NextLevelXp - stat.PrevLevelXp - GetXpDiff(stat.Level)} XP)";
+                return "Statistics not ready yet";
             }
-            return output;
+            long experienceSinceStarted = _currentPlayerStats.Experience - _initPlayerStats.Experience;
+            // TNL - to next level
+            long currentExperienceTNL = _currentPlayerStats.Experience - _currentPlayerStats.PrevLevelXp - experienceToLevel(_currentPlayerStats.Level);
+            long totalExperienceTNL = _currentPlayerStats.NextLevelXp - _currentPlayerStats.PrevLevelXp - experienceToLevel(_currentPlayerStats.Level);
+            long remainingExperienceTNL = totalExperienceTNL - currentExperienceTNL;
+            double experiencePerHour = experienceSinceStarted / (runtime().TotalSeconds / 3600);
+            double timeTNL = Math.Round(remainingExperienceTNL / experiencePerHour, 2);
+            double hoursTNL = 0.00;
+            double minutesTNL = 0.00;
+            if (double.IsInfinity(timeTNL) == false && timeTNL > 0)
+            {
+                timeTNL = Convert.ToDouble(TimeSpan.FromHours(timeTNL).ToString("h\\.mm"), CultureInfo.InvariantCulture);
+                hoursTNL = Math.Truncate(timeTNL);
+                minutesTNL = Math.Round((timeTNL - hoursTNL) * 100);
+            }
+            int pokemonsCaptured = _currentPlayerStats.PokemonsCaptured - _initPlayerStats.PokemonsCaptured;
+            // this is not working
+            //int pokemonsTransfered = _currentPlayerStats.PokemonDeployed - _initPlayerStats.PokemonDeployed;
+            return $"{_playerName} (next level in {hoursTNL}h {minutesTNL}m |"
+                + $" {currentExperienceTNL}/{totalExperienceTNL} XP) - Runtime {runtime().ToString(@"dd\.hh\:mm\:ss")}"
+                + $" - Lvl: {_currentPlayerStats.Level} | EXP/H: {experiencePerHour:0} | P/H: {(pokemonsCaptured / (runtime().TotalSeconds / 3600)):0}"
+                + $" | Stardust: {_totalStardust:0}";
         }
 
-        public double GetRuntime()
+        private TimeSpan runtime()
         {
-            return (DateTime.Now - _initSessionDateTime).TotalSeconds / 3600;
+            return (DateTime.Now - _initSessionDateTime);
         }
 
-        public static int GetXpDiff(int level)
+        private long experienceToLevel(int level)
         {
             if (level > 0 && level <= 40)
             {
                 int[] xpTable = { 0, 1000, 2000, 3000, 4000, 5000, 6000, 7000, 8000, 9000,
                     10000, 10000, 10000, 10000, 15000, 20000, 20000, 20000, 25000, 25000,
                     50000, 75000, 100000, 125000, 150000, 190000, 200000, 250000, 300000, 350000,
-                    500000, 500000, 750000, 1000000, 1250000, 1500000, 2000000, 2500000, 1000000, 1000000};
+                    500000, 500000, 750000, 1000000, 1250000, 1500000, 2000000, 2500000, 3000000, 5000000};
                 return xpTable[level - 1];
             }
             return 0;
-        }
-
-        public void SetUsername(GetPlayerResponse profile)
-        {
-            _playerName = profile.PlayerData.Username ?? "";
-        }
-
-        public override string ToString()
-        {
-            return
-                $"{_playerName} - Runtime {FormatRuntime()} - Lvl: {_currentLevelInfos} | EXP/H: {ExperienceSinceStarted / GetRuntime():0} | P/H: {PokemonCaughtSinceStarted / GetRuntime():0} | Stardust: {TotalStardust:0} | Transfered: {PokemonTransferedSinceStarted:0} | Items Recycled: {ItemsRecycledSinceStarted:0}";
         }
     }
 }

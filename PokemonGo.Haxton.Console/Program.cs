@@ -122,6 +122,7 @@ namespace PokemonGo.Haxton.Console
                     catch (Exception ex)
                     {
                         logger.Fatal(ex, "Fatal error, attempting to restart");
+                        Thread.Sleep(5000);
                     }
                 }
             }, _cancelToken.Token);
@@ -140,7 +141,7 @@ namespace PokemonGo.Haxton.Console
             var stats = container.GetInstance<IPoGoStatistics>();
             while (true)
             {
-                System.Console.Title = stats.GetCurrentInfo() + " " + stats;
+                System.Console.Title = stats.statistics();
                 await Task.Delay(30000);
             }
         }

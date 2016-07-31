@@ -6,7 +6,9 @@ using POGOProtos.Networking.Responses;
 using PokemonGo.Haxton.Bot.ApiProvider;
 using PokemonGo.Haxton.Bot.Inventory;
 using PokemonGo.Haxton.Bot.Utilities;
+using PokemonGo.RocketAPI.Extensions;
 using System;
+using System.Globalization;
 using System.Linq;
 using System.Security.Cryptography;
 using System.Threading;
@@ -19,7 +21,7 @@ namespace PokemonGo.Haxton.Bot.Navigation
     {
         Task<EncounterResponse> EncounterPokemonAsync(MapPokemon pokemon);
 
-        Task CatchPokemon(EncounterResponse encounter, MapPokemon pokemon);
+        Task CatchPokemon(EncounterResponse encounter, MapPokemon pokemon, bool isSniping);
 
         Task<DiskEncounterResponse> EncounterPokemonLure(ulong encounterId, string spawnPointGuid);
 
@@ -56,27 +58,37 @@ namespace PokemonGo.Haxton.Bot.Navigation
             return await _apiEncounter.EncounterLurePokemon(encounterId, fortId);
         }
 
-        public async Task CatchPokemon(ulong encounterId, string id, DiskEncounterResponse encounter, PokemonId pokemonId)
+        public async Task CatchPokemon(ulong encounterId, string id, DiskEncounterResponse encounter, PokemonId pokemonId) // Catch lured Pokémon
         {
             CatchPokemonResponse caughtPokemonResponse;
-            var attempts = 0;
+            var attempts = 1;
             do
             {
                 var probability = encounter?.CaptureProbability?.CaptureProbability_?.FirstOrDefault();
                 var pokeball = GetPokeball(encounter);
 
-                caughtPokemonResponse =
-                    await _apiEncounter.CatchPokemon(encounterId, id, pokeball);
-                logger.Info($"[{caughtPokemonResponse.Status} - {attempts}] {pokemonId} encountered. {PokemonInfo.CalculatePokemonPerfection(encounter?.PokemonData)}% perfect. {encounter?.PokemonData?.Cp} CP. Probability: {probability}");
+                caughtPokemonResponse = await _apiEncounter.CatchPokemon(encounterId, id, pokeball);
+
+                var catchResult = "     Error"; switch (caughtPokemonResponse.Status.ToString())
+                {   case "CatchSuccess": catchResult = "    Caught"; break;
+                    case "CatchEscape":  catchResult = "Broke free"; break;
+                    case "CatchFlee":    catchResult = "      Fled"; break; }
+
+                var IVPadded = Math.Round(PokemonInfo.CalculatePokemonPerfection(encounter?.PokemonData), 2).ToString("0.00").PadLeft(6);
+
+                logger.Info($"[{attempts} {catchResult}] {(pokemonId).ToString().PadLeft(13)}"
+                            + $" {IVPadded} IV%."
+                            + $" {encounter?.PokemonData?.Cp.ToString().PadLeft(4)} CP. {Math.Round((double)probability * 100, 2).ToString("0.00").PadLeft(6)}% using {pokeball}.");
+
                 attempts++;
             } while (caughtPokemonResponse.Status == CatchPokemonResponse.Types.CatchStatus.CatchMissed ||
                      caughtPokemonResponse.Status == CatchPokemonResponse.Types.CatchStatus.CatchEscape);
         }
 
-        public async Task CatchPokemon(EncounterResponse encounter, MapPokemon pokemon)
+        public async Task CatchPokemon(EncounterResponse encounter, MapPokemon pokemon, bool isSniping)
         {
             CatchPokemonResponse caughtPokemonResponse;
-            var attempts = 0;
+            var attempts = 1;
             //var r = new Random((int)DateTime.Now.Ticks);
             //var waitTime = r.Next(100, 3000);
             do
@@ -100,7 +112,32 @@ namespace PokemonGo.Haxton.Bot.Navigation
                 //    Thread.Sleep(waitTime);
                 caughtPokemonResponse =
                     await _apiEncounter.CatchPokemon(pokemon.EncounterId, pokemon.SpawnPointId, pokeball);
-                logger.Info($"[{caughtPokemonResponse.Status} - {attempts}] {pokemon.PokemonId} {Math.Round(PokemonInfo.CalculatePokemonPerfection(encounter?.WildPokemon?.PokemonData), 1)}% perfect. {encounter?.WildPokemon?.PokemonData?.Cp} CP. Probabilty: {Math.Round((double)probability * 100, 1)} with ball: {pokeball}");
+
+                var catchResult = "     Error"; switch (caughtPokemonResponse.Status.ToString())
+                {   case "CatchSuccess": catchResult = "    Caught"; break;
+                    case "CatchEscape":  catchResult = "Broke free"; break;
+                    case "CatchFlee":    catchResult = "      Fled"; break; }
+
+                var durationLeft = ((pokemon.ExpirationTimestampMs - DateTime.UtcNow.ToUnixTime()) / 1000 / 60 >= 0)
+                                 ? ((pokemon.ExpirationTimestampMs - DateTime.UtcNow.ToUnixTime()) / 1000 / 60).ToString().PadLeft(2) + ":" + ((pokemon.ExpirationTimestampMs - DateTime.UtcNow.ToUnixTime()) / 1000 % 60).ToString().PadLeft(2,'0') + " left"
+                                 : "   Expired";
+                var coordsPadded = ((pokemon.Latitude).ToString(CultureInfo.InvariantCulture).PadRight(16,'0') + "," + pokemon.Longitude.ToString(CultureInfo.InvariantCulture).PadRight(16,'0')).PadLeft(35);
+                var IVPadded = Math.Round(PokemonInfo.CalculatePokemonPerfection(encounter?.WildPokemon?.PokemonData), 2).ToString("0.00").PadLeft(6);
+
+                if (isSniping || isHighPerfection) {
+                    logger.Warn(  $"[{attempts} {catchResult}] {(pokemon.PokemonId).ToString().PadLeft(13)}"
+                                + $" {coordsPadded}"
+                                + $" {IVPadded} IV%."
+                                + $" {durationLeft}."
+                                + $" {encounter?.WildPokemon?.PokemonData?.Cp.ToString().PadLeft(4)} CP. {Math.Round((double)probability * 100, 2).ToString("0.00").PadLeft(6)}% using {pokeball}.");
+                } else {
+                    logger.Info(  $"[{attempts} {catchResult}] {(pokemon.PokemonId).ToString().PadLeft(13)}"
+                                + $" {coordsPadded}"
+                                + $" {IVPadded} IV%."
+                                + $" {durationLeft}."
+                                + $" {encounter?.WildPokemon?.PokemonData?.Cp.ToString().PadLeft(4)} CP. {Math.Round((double)probability * 100, 2).ToString("0.00").PadLeft(6)}% using {pokeball}.");
+                }
+                
                 attempts++;
             } while (caughtPokemonResponse.Status == CatchPokemonResponse.Types.CatchStatus.CatchMissed ||
                      caughtPokemonResponse.Status == CatchPokemonResponse.Types.CatchStatus.CatchEscape);
@@ -108,15 +145,21 @@ namespace PokemonGo.Haxton.Bot.Navigation
 
         private async void UseBerry(ulong encounterId, string spawnPointId)
         {
-            logger.Info("Using berry");
+            logger.Info("Using Berry");
             var cachedInventory = _inventory.Items;
             var berries = cachedInventory.Where(p => p.ItemId == ItemId.ItemRazzBerry);
             var berry = berries.FirstOrDefault();
 
             if (berry == null || berry.Count <= 0)
                 return;
-
-            await _apiEncounter.UseCaptureItem(encounterId, ItemId.ItemRazzBerry, spawnPointId);
+            try
+            {
+                await _apiEncounter.UseCaptureItem(encounterId, ItemId.ItemRazzBerry, spawnPointId);
+            }
+            catch(InvalidOperationException ex)
+            {
+                logger.Error(ex.ToString());
+            }
             berry.Count -= 1;
 
             await Task.Delay(100);
