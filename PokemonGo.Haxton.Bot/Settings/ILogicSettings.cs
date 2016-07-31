@@ -26,8 +26,6 @@ namespace PokemonGo.Haxton.Bot
         bool UseLuckyEggsWhileEvolving { get; }
         bool EvolveAllPokemonAboveIv { get; }
         float EvolveAboveIvValue { get; }
-		bool AutoSnipe { get; }
-        string AutoSnipeType { get; }
 
 		Dictionary<ItemId, int> ItemRecycleFilter { get; }
 
@@ -36,8 +34,6 @@ namespace PokemonGo.Haxton.Bot
         ICollection<PokemonId> PokemonsNotToTransfer { get; }
 
         ICollection<PokemonId> PokemonsNotToCatch { get; }
-
-		ICollection<PokemonId> PokemonsNotToAutoSnipe { get; }
 
 		bool Teleport { get; set; }
         bool BurstMode { get; }

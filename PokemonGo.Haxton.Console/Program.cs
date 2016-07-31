@@ -52,7 +52,9 @@ namespace PokemonGo.Haxton.Console
                         _.For<IApiMap>().Use<ApiMap>().Singleton();
                         _.For<IApiMisc>().Use<ApiMisc>().Singleton();
                         _.For<IApiPlayer>().Use<ApiPlayer>().Singleton();
-
+                        _.For<IPoGoAsh>().Use<PoGoAsh>().Singleton();
+                        _.For<IPoGoPokemon>().Use<PoGoPokemon>().Singleton();
+                        _.For<IPoGoPokestop>().Use<PoGoPokestop>().Singleton();
                         _.For<IPoGoBot>().Use<PoGoBot>().Singleton();
                         _.For<IPoGoInventory>().Use<PoGoInventory>().Ctor<CancellationToken>().Is(_cancelTokenSource.Token).Singleton();
                         _.For<IPoGoEncounter>().Use<PoGoEncounter>().Singleton();

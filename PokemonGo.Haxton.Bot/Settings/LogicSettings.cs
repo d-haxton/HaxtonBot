@@ -32,8 +32,6 @@ namespace PokemonGo.Haxton.Bot.Settings
             PokemonsNotToCatch = GetPokemon("./UserSettings/PokemonToAvoid.cfg");
             LocationsToVisit = GetLocations("./UserSettings/LocationsToCycle.cfg");
             BurstMode = Convert.ToBoolean(ConfigurationManager.AppSettings["UseBurstMode"]);
-			AutoSnipe = Convert.ToBoolean(ConfigurationManager.AppSettings["AutoSnipe"]);
-            AutoSnipeType = ConfigurationManager.AppSettings["AutoSnipeType"];
             //
         }
 
