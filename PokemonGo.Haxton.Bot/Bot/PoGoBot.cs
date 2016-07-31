@@ -12,6 +12,7 @@ using System;
 using System.Collections.Generic;
 using System.Device.Location;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace PokemonGo.Haxton.Bot.Bot
@@ -22,7 +23,7 @@ namespace PokemonGo.Haxton.Bot.Bot
         bool ShouldEvolvePokemon { get; set; }
         bool ShouldTransferPokemon { get; set; }
 
-        List<Task> Run();
+        List<Task> Run(CancellationToken _token);
     }
 
     public class PoGoBot : IPoGoBot
@@ -37,6 +38,7 @@ namespace PokemonGo.Haxton.Bot.Bot
         private readonly IPoGoFort _fort;
         private readonly IPoGoMap _map;
         private readonly ILogicSettings _settings;
+        private CancellationToken _token;
 
         public bool ShouldRecycleItems { get; set; }
         public bool ShouldEvolvePokemon { get; set; }
@@ -60,18 +62,19 @@ namespace PokemonGo.Haxton.Bot.Bot
             ShouldRecycleItems = _settings.ItemRecycleFilter.Count > 0;
         }
 
-        public List<Task> Run()
+        public List<Task> Run(CancellationToken _token)
         {
+            this._token = _token;
             logger.Info("Starting bot.");
 
             var taskList = new List<Task>
             {
                 Task
-                    .Run(RecycleItemsTask),
+                    .Run(RecycleItemsTask, _token),
                 Task
-                    .Run(TransferDuplicatePokemon),
+                    .Run(TransferDuplicatePokemon, _token),
                 Task
-                    .Run(FarmPokestopsTask)
+                    .Run(FarmPokestopsTask, _token)
             };
 
             return taskList;
@@ -79,11 +82,12 @@ namespace PokemonGo.Haxton.Bot.Bot
 
         private async Task RemoveSoftBan(FortData closestPokestop)
         {
-            var pokestopBooty = await _fort.SearchFort(closestPokestop.Id, closestPokestop.Latitude, closestPokestop.Longitude);
-            while (pokestopBooty.Result == FortSearchResponse.Types.Result.Success)
+            FortSearchResponse pokestopBooty = null;
+            do
             {
                 pokestopBooty = await _fort.SearchFort(closestPokestop.Id, closestPokestop.Latitude, closestPokestop.Longitude);
             }
+            while (pokestopBooty.Result == FortSearchResponse.Types.Result.Success);
         }
 
         private async Task FarmPokestopsTask()
@@ -92,7 +96,7 @@ namespace PokemonGo.Haxton.Bot.Bot
             var numberOfPokestopsVisited = 0;
             var returnToStart = DateTime.Now;
             var pokestopList = (await _map.GetPokeStops()).Where(t => t.CooldownCompleteTimestampMs < DateTime.UtcNow.ToUnixTime()).ToList();
-            while (true)
+            while (!_token.IsCancellationRequested)
             {
                 var loc = new KeyValuePair<double, double>();
                 if (_snipe.SnipeLocations.Count > 0)
@@ -188,6 +192,7 @@ namespace PokemonGo.Haxton.Bot.Bot
                     var burst = await CatchBurstPokemon(loc.Key, loc.Value);
                     await _navigation.TeleportToLocation(x, y);
                     burst.ForEach(a => a.Invoke());
+                    isSniping = false;
                 }
                 else if (_settings.BurstMode)
                 {
@@ -204,6 +209,7 @@ namespace PokemonGo.Haxton.Bot.Bot
                 await Task.Delay(100);
                 //}
             }
+            _token.ThrowIfCancellationRequested();
         }
 
         private async Task Search()
@@ -319,7 +325,7 @@ namespace PokemonGo.Haxton.Bot.Bot
 
         private async Task TransferDuplicatePokemon()
         {
-            while (ShouldTransferPokemon)
+            while (!_token.IsCancellationRequested && ShouldTransferPokemon)
             {
                 EvolvePokemonTask();
                 var duplicatePokemon = _inventory.GetDuplicatePokemonForTransfer(_settings.KeepPokemonsThatCanEvolve, _settings.PrioritizeIvOverCp, _settings.PokemonsNotToTransfer);
@@ -339,6 +345,7 @@ namespace PokemonGo.Haxton.Bot.Bot
                 }
                 await Task.Delay(30000);
             }
+            _token.ThrowIfCancellationRequested();
         }
 
         private void EvolvePokemonTask()
@@ -389,7 +396,7 @@ namespace PokemonGo.Haxton.Bot.Bot
 
         private async Task RecycleItemsTask()
         {
-            while (ShouldRecycleItems)
+            while (!_token.IsCancellationRequested && ShouldRecycleItems)
             {
                 var itemsToThrowAway = _inventory.GetItemsToRecycle(_settings.ItemRecycleFilter).ToList();
                 itemsToThrowAway.ForEach(async x =>
@@ -407,6 +414,7 @@ namespace PokemonGo.Haxton.Bot.Bot
                 });
                 await Task.Delay(30000);
             }
+            _token.ThrowIfCancellationRequested();
         }
     }
 }
