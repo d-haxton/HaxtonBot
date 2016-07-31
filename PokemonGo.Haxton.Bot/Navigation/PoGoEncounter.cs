@@ -152,8 +152,14 @@ namespace PokemonGo.Haxton.Bot.Navigation
 
             if (berry == null || berry.Count <= 0)
                 return;
-
-            await _apiEncounter.UseCaptureItem(encounterId, ItemId.ItemRazzBerry, spawnPointId);
+            try
+            {
+                await _apiEncounter.UseCaptureItem(encounterId, ItemId.ItemRazzBerry, spawnPointId);
+            }
+            catch(InvalidOperationException ex)
+            {
+                logger.Error(ex.ToString());
+            }
             berry.Count -= 1;
 
             await Task.Delay(100);

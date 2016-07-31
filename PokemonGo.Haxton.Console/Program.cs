@@ -141,7 +141,7 @@ namespace PokemonGo.Haxton.Console
             var stats = container.GetInstance<IPoGoStatistics>();
             while (true)
             {
-                System.Console.Title = stats.GetCurrentInfo() + " " + stats;
+                System.Console.Title = stats.statistics();
                 await Task.Delay(30000);
             }
         }
