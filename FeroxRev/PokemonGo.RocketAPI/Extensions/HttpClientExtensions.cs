@@ -20,15 +20,16 @@ namespace PokemonGo.RocketAPI.Extensions
             do
             {
                 Debug.WriteLine($"Requesting {typeof(TResponsePayload).Name}");
-                Thread.Sleep(50);
+                Thread.Sleep(150);
                 response = await PostProto<TRequest>(client, url, requestEnvelope);
 
                 //Decode payload
                 //todo: multi-payload support
                 attempts++;
-            } while (response.Returns.Count == 0 && attempts < 10);
-            if (attempts >= 10)
+            } while (response.Returns.Count == 0 && attempts < 25);
+            if (attempts >= 25)
             {
+                Console.WriteLine($"Failed to request packet {typeof(TResponsePayload).Name}");
                 return new TResponsePayload();
             }
 

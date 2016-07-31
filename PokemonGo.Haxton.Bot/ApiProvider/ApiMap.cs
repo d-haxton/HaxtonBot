@@ -5,6 +5,7 @@ using POGOProtos.Networking.Responses;
 using PokemonGo.RocketAPI.Extensions;
 using PokemonGo.RocketAPI.Helpers;
 using System;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace PokemonGo.Haxton.Bot.ApiProvider
@@ -32,7 +33,7 @@ namespace PokemonGo.Haxton.Bot.ApiProvider
             var getMapObjectsMessage = new GetMapObjectsMessage
             {
                 CellId = { S2Helper.GetNearbyCellIds(_client.CurrentLongitude, _client.CurrentLatitude) },
-                SinceTimestampMs = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },
+                SinceTimestampMs = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1 },
                 Latitude = _client.CurrentLatitude,
                 Longitude = _client.CurrentLongitude
             };

@@ -99,6 +99,9 @@ namespace PokemonGo.Haxton.Console
                             _.For<IPoGoSnipe>().Use<PoGoSnipe>().Singleton();
                             _.For<IPoGoLogin>().Use<PoGoLogin>().Singleton();
                             _.For<IPoGoFort>().Use<PoGoFort>().Singleton();
+                            _.For<IPoGoAsh>().Use<PoGoAsh>().Singleton();
+                            _.For<IPoGoPokemon>().Use<PoGoPokemon>().Singleton();
+                            _.For<IPoGoPokestop>().Use<PoGoPokestop>().Singleton();
 
                             _.For<ISettings>().Use<Settings>().Singleton();
                             _.For<ILogicSettings>().Use<LogicSettings>().Singleton();

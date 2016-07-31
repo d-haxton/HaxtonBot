@@ -52,7 +52,7 @@ namespace PokemonGo.Haxton.Bot.ApiProvider
             while (true)
             {
                 _requestPerSecond = 0;
-                await Task.Delay(1200);
+                await Task.Delay(1000);
             }
         }
 
