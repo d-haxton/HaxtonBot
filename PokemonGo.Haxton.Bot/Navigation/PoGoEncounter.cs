@@ -19,11 +19,11 @@ namespace PokemonGo.Haxton.Bot.Navigation
     {
         Task<EncounterResponse> EncounterPokemonAsync(MapPokemon pokemon);
 
-        Task CatchPokemon(EncounterResponse encounter, MapPokemon pokemon);
+        Task<CatchPokemonResponse> CatchPokemon(EncounterResponse encounter, MapPokemon pokemon);
 
         Task<DiskEncounterResponse> EncounterPokemonLure(ulong encounterId, string spawnPointGuid);
 
-        Task CatchPokemon(ulong encounterId, string id, DiskEncounterResponse encounter, PokemonId pokemonId);
+        Task<CatchPokemonResponse> CatchPokemon(ulong encounterId, string id, DiskEncounterResponse encounter, PokemonId pokemonId);
     }
 
     public class PoGoEncounter : IPoGoEncounter
@@ -56,7 +56,7 @@ namespace PokemonGo.Haxton.Bot.Navigation
             return await _apiEncounter.EncounterLurePokemon(encounterId, fortId);
         }
 
-        public async Task CatchPokemon(ulong encounterId, string id, DiskEncounterResponse encounter, PokemonId pokemonId)
+        public async Task<CatchPokemonResponse> CatchPokemon(ulong encounterId, string id, DiskEncounterResponse encounter, PokemonId pokemonId)
         {
             CatchPokemonResponse caughtPokemonResponse;
             var attempts = 0;
@@ -71,9 +71,10 @@ namespace PokemonGo.Haxton.Bot.Navigation
                 attempts++;
             } while (caughtPokemonResponse.Status == CatchPokemonResponse.Types.CatchStatus.CatchMissed ||
                      caughtPokemonResponse.Status == CatchPokemonResponse.Types.CatchStatus.CatchEscape);
+            return caughtPokemonResponse;
         }
 
-        public async Task CatchPokemon(EncounterResponse encounter, MapPokemon pokemon)
+        public async Task<CatchPokemonResponse> CatchPokemon(EncounterResponse encounter, MapPokemon pokemon)
         {
             CatchPokemonResponse caughtPokemonResponse;
             var attempts = 0;
@@ -85,7 +86,7 @@ namespace PokemonGo.Haxton.Bot.Navigation
 
                 var pokeball = GetPokeball(encounter);
                 if (pokeball == ItemId.ItemUnknown)
-                    return;
+                    return new CatchPokemonResponse();
                 var isLowProbability = probability.HasValue && probability.Value < 0.35;
                 var isHighCp = encounter != null && encounter.WildPokemon?.PokemonData?.Cp > 400;
                 var isHighPerfection = PokemonInfo.CalculatePokemonPerfection(encounter?.WildPokemon?.PokemonData) >= _logicSettings.KeepMinIvPercentage;
@@ -104,6 +105,7 @@ namespace PokemonGo.Haxton.Bot.Navigation
                 attempts++;
             } while (caughtPokemonResponse.Status == CatchPokemonResponse.Types.CatchStatus.CatchMissed ||
                      caughtPokemonResponse.Status == CatchPokemonResponse.Types.CatchStatus.CatchEscape);
+            return caughtPokemonResponse;
         }
 
         private async void UseBerry(ulong encounterId, string spawnPointId)

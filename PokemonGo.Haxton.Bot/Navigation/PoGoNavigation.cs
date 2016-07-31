@@ -1,7 +1,9 @@
 ﻿using POGOProtos.Map.Fort;
 using POGOProtos.Networking.Responses;
 using PokemonGo.Haxton.Bot.ApiProvider;
+using PokemonGo.Haxton.Bot.Bot;
 using PokemonGo.Haxton.Bot.Utilities;
+using PokemonGo.RocketAPI;
 using System;
 using System.Device.Location;
 using System.Globalization;
@@ -22,6 +24,8 @@ namespace PokemonGo.Haxton.Bot.Navigation
         Task TeleportToPokestop(FortData closestPokestop);
 
         Task TeleportToLocation(double lat, double longitude);
+
+        Task Move(FortData pokestop, Action action);
     }
 
     public class PoGoNavigation : IPoGoNavigation
@@ -30,12 +34,14 @@ namespace PokemonGo.Haxton.Bot.Navigation
         private readonly IApiPlayer _player;
         private readonly IApiClient _client;
         private readonly ILogicSettings _logicSettings;
+        private readonly ISettings _settings;
 
-        public PoGoNavigation(IApiPlayer player, IApiClient client, ILogicSettings logicSettings)
+        public PoGoNavigation(IApiPlayer player, IApiClient client, ILogicSettings logicSettings, ISettings settings)
         {
             _player = player;
             _client = client;
             _logicSettings = logicSettings;
+            _settings = settings;
         }
 
         public double CurrentLatitude
@@ -97,7 +103,7 @@ namespace PokemonGo.Haxton.Bot.Navigation
                             _client.Settings.DefaultAltitude);
 
                 //if (result.WildPokemons.Count > 0)
-                functionExecutedWhileWalking?.Invoke(); // look for pokemon
+                functionExecutedWhileWalking.Invoke();
 
                 if (_logicSettings.Teleport == false)
                     await Task.Delay(Math.Min((int)(currentDistanceToTarget / speedInMetersPerSecond * 1000), 1500));
@@ -127,9 +133,8 @@ namespace PokemonGo.Haxton.Bot.Navigation
             //Initial walking
 
             var requestSendDateTime = DateTime.Now;
-            var result =
-                await
-                    _player.UpdatePlayerLocation(waypoint.Latitude, waypoint.Longitude, waypoint.Altitude);
+            PlayerUpdateResponse result;
+            await _player.UpdatePlayerLocation(waypoint.Latitude, waypoint.Longitude, waypoint.Altitude);
 
             do
             {
@@ -138,15 +143,6 @@ namespace PokemonGo.Haxton.Bot.Navigation
 
                 sourceLocation = new GeoCoordinate(_client.CurrentLatitude, _client.CurrentLongitude);
                 var currentDistanceToTarget = LocationUtils.CalculateDistanceInMeters(sourceLocation, targetLocation);
-
-                //if (currentDistanceToTarget < 40)
-                //{
-                //    if (speedInMetersPerSecond > SpeedDownTo)
-                //    {
-                //        //Logger.Write("We are within 40 meters of the target. Speeding down to 10 km/h to not pass the target.", LogLevel.Info);
-                //        speedInMetersPerSecond = SpeedDownTo;
-                //    }
-                //}
 
                 nextWaypointDistance = Math.Min(currentDistanceToTarget,
                     millisecondsUntilGetUpdatePlayerLocationResponse / 1000 * speedInMetersPerSecond);
@@ -171,16 +167,31 @@ namespace PokemonGo.Haxton.Bot.Navigation
         {
             if (closestPokestop?.Latitude == null)
                 return;
-            //if (closestPokestop.Latitude > 35)
-            //    return;
-            await _player.UpdatePlayerLocation(closestPokestop.Latitude, closestPokestop.Longitude, 10);
+            await _player.UpdatePlayerLocation(closestPokestop.Latitude, closestPokestop.Longitude, _settings.DefaultAltitude);
         }
 
         public async Task TeleportToLocation(double lat, double longitude)
         {
-            //if (lat > 35)
-            //    return;
-            await _player.UpdatePlayerLocation(lat, longitude, 10);
+            await _player.UpdatePlayerLocation(lat, longitude, _settings.DefaultAltitude);
+        }
+
+        public async Task Move(FortData pokestop, Action action)
+        {
+            if (_logicSettings.Teleport)
+            {
+                //var distance = LocationUtils.CalculateDistanceInMeters(_navigation.CurrentLatitude, _navigation.CurrentLongitude, pokestop.Latitude, pokestop.Longitude);
+                //if (distance > 100)
+                //{
+                //    var r = new Random((int)DateTime.Now.Ticks);
+                //    closestPokestop =
+                //        pokestopList.ElementAt(r.Next(pokestopList.Count));
+                //}
+                await TeleportToPokestop(pokestop);
+            }
+            else
+            {
+                await HumanLikeWalking(new GeoCoordinate(pokestop.Latitude, pokestop.Longitude), _logicSettings.WalkingSpeedInKilometerPerHour, action);
+            }
         }
     }
 }

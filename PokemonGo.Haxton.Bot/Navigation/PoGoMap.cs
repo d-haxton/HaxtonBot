@@ -14,8 +14,6 @@ namespace PokemonGo.Haxton.Bot.Navigation
 {
     public interface IPoGoMap
     {
-        Task<IEnumerable<FortData>> GetPokeStops();
-
         Task<IOrderedEnumerable<MapPokemon>> GetNearbyPokemonClosestFirst();
 
         Task<IOrderedEnumerable<FortData>> GetFortWithPokemon();
@@ -34,23 +32,6 @@ namespace PokemonGo.Haxton.Bot.Navigation
             _map = map;
             _settings = settings;
             _logicSettings = logicSettings;
-        }
-
-        public async Task<IEnumerable<FortData>> GetPokeStops()
-        {
-            var mapObjects = await _map.GetMapObjects();
-            var pokeStops = mapObjects.MapCells.SelectMany(i => i.Forts)
-                .Where(
-                    i =>
-                        i.Type == FortType.Checkpoint &&
-                        i.CooldownCompleteTimestampMs < DateTime.UtcNow.ToUnixTime() &&
-                        ( // Make sure PokeStop is within max travel distance, unless it's set to 0.
-                            LocationUtils.CalculateDistanceInMeters(
-                                _settings.DefaultLatitude, _settings.DefaultLongitude,
-                                i.Latitude, i.Longitude) < _logicSettings.MaxTravelDistanceInMeters) ||
-                        _logicSettings.MaxTravelDistanceInMeters == 0
-                );
-            return pokeStops;
         }
 
         public async Task<IOrderedEnumerable<FortData>> GetFortWithPokemon()

@@ -50,7 +50,10 @@
     <Reference Include="System" />
     <Reference Include="System.Configuration" />
     <Reference Include="System.Core" />
-    <Reference Include="System.Device" />
+    <Reference Include="System.Device.Portable, Version=1.0.0.0, Culture=neutral, PublicKeyToken=3f6d3f5f65b761a0, processorArchitecture=MSIL">
+      <HintPath>..\packages\System.Device.Location.Portable.1.0.0\lib\System.Device.Portable.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
     <Reference Include="System.IO.Compression" />
     <Reference Include="System.Runtime.Serialization" />
     <Reference Include="System.ServiceModel" />
@@ -74,7 +77,10 @@
     <Compile Include="ApiProvider\ApiMap.cs" />
     <Compile Include="ApiProvider\ApiMisc.cs" />
     <Compile Include="ApiProvider\ApiPlayer.cs" />
+    <Compile Include="Bot\PoGoAsh.cs" />
     <Compile Include="Bot\PoGoBot.cs" />
+    <Compile Include="Bot\PoGoPokemon.cs" />
+    <Compile Include="Bot\PoGoPokestop.cs" />
     <Compile Include="Bot\PoGoSnipe.cs" />
     <Compile Include="Navigation\PoGoEncounter.cs" />
     <Compile Include="Navigation\PoGoFort.cs" />

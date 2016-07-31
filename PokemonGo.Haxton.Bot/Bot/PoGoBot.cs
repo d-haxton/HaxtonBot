@@ -1,4 +1,4 @@
-using MoreLinq;
+﻿using MoreLinq;
 using NLog;
 using NLog.Fluent;
 using POGOProtos.Enums;
@@ -35,27 +35,23 @@ namespace PokemonGo.Haxton.Bot.Bot
         private DateTime LuckyEggUsed { get; set; }
         private readonly IPoGoNavigation _navigation;
         private readonly IPoGoInventory _inventory;
-        private readonly IPoGoEncounter _encounter;
+        private readonly IPoGoAsh _ash;
         private readonly IPoGoSnipe _snipe;
-        private readonly IPoGoFort _fort;
-        private readonly IPoGoMap _map;
+        private readonly IPoGoPokestop _pokestop;
         private readonly ILogicSettings _settings;
         private CancellationToken _token;
 
         public bool ShouldRecycleItems { get; set; }
         public bool ShouldEvolvePokemon { get; set; }
         public bool ShouldTransferPokemon { get; set; }
-        public bool isSniping { get; private set; }
-        public bool isFindingAutoSnipeLocations { get; private set; }
 
-        public PoGoBot(IPoGoNavigation navigation, IPoGoInventory inventory, IPoGoEncounter encounter, IPoGoSnipe snipe, IPoGoFort fort, IPoGoMap map, ILogicSettings settings)
+        public PoGoBot(IPoGoNavigation navigation, IPoGoInventory inventory, IPoGoAsh ash, IPoGoSnipe snipe, IPoGoPokestop pokestop, ILogicSettings settings)
         {
             _navigation = navigation;
             _inventory = inventory;
-            _encounter = encounter;
+            _ash = ash;
             _snipe = snipe;
-            _fort = fort;
-            _map = map;
+            _pokestop = pokestop;
             _settings = settings;
 
             LuckyEggUsed = DateTime.MinValue;
@@ -83,396 +79,41 @@ namespace PokemonGo.Haxton.Bot.Bot
             return taskList;
         }
 
-        private async Task RemoveSoftBan(FortData closestPokestop)
+        private async Task FarmPokestops()
         {
-            FortSearchResponse pokestopBooty = null;
-            do
+            var pokestops = _pokestop.Pokestops.ToList();
+            if (!pokestops.Any())
+                return;
+            var pokestop = pokestops.Where(x => x.CooldownCompleteTimestampMs < DateTime.UtcNow.ToUnixTime()).OrderBy(i =>
+                LocationUtils.CalculateDistanceInMeters(_navigation.CurrentLatitude,
+                    _navigation.CurrentLongitude, i.Latitude, i.Longitude)).First();
+            var distance = LocationUtils.CalculateDistanceInMeters(_navigation.CurrentLatitude,
+                _navigation.CurrentLongitude, pokestop.Latitude, pokestop.Longitude);
+            if (distance > 100)
             {
-                pokestopBooty = await _fort.SearchFort(closestPokestop.Id, closestPokestop.Latitude, closestPokestop.Longitude);
+                var lurePokestop = pokestops.FirstOrDefault(x => x.LureInfo != null);
+                if (lurePokestop != null)
+                    pokestop = lurePokestop;
             }
-            while (pokestopBooty.Result == FortSearchResponse.Types.Result.Success);
+            await _navigation.Move(pokestop, async () => await _ash.CatchEmAll());
+            await _pokestop.Search(pokestop);
+            if (_snipe.SnipeLocations.Count > 0)
+            {
+                await _snipe.DoSnipe();
+                return;
+            }
+            await _ash.CatchEmAll(pokestop);
         }
 
-
-        //private async Task FarmPokestopsTask()
-        //{
-            
-        //    int numberOfPokestopsVisited = 0;
-        //    var returnToStart = DateTime.Now;
-        //    var pokestopList = (await _map.GetPokeStops()).ToList();
-        //    if (!pokestopList.Any())
-        //    {
-        //        logger.Error("There is no pokestops nearby, exiting");
-        //        await Task.Delay(10000);
-        //        throw new Exception("NO_POKESTOPS");
-        //    }
-        //    FortData firstPokestop = pokestopList.OrderBy(
-        //            i =>
-        //                LocationUtils.CalculateDistanceInMeters(_navigation.CurrentLatitude,
-        //                    _navigation.CurrentLongitude, i.Latitude, i.Longitude)).First();
-        //    while (!_token.IsCancellationRequested)
-        //    {
-        //        if (_settings.AutoSnipe)
-        //        {
-        //            await FetchAutoSnipeLocations();
-        //            while (isFindingAutoSnipeLocations)
-        //            {
-        //                await Task.Delay(100);
-        //            }
-        //            if (_snipe.SnipeLocations.Count > 0)
-        //            {
-        //                var snipeLocation = new KeyValuePair<double, double>();
-        //                for (int i = 0; i <= _snipe.SnipeLocations.Count; i++)
-        //                {
-        //                    if (_snipe.SnipeLocations.TryTake(out snipeLocation))
-        //                    {
-        //                        logger.Info($"Sniping pokemon at {snipeLocation.Key}, {snipeLocation.Value}");
-        //                        await _navigation.TeleportToLocation(snipeLocation.Key, snipeLocation.Value);
-        //                        var snipingPokestopList = (await _map.GetPokeStops()).Where(t => t.CooldownCompleteTimestampMs < DateTime.UtcNow.ToUnixTime()).ToList();
-        //                        FortData snipingClosestPokestop = null;
-        //                        if (!snipingPokestopList.Any())
-        //                        {
-        //                            //logger.Warn("No pokestops near sniping target, skipping");
-        //                            //continue;
-        //                            var r = new Random((int)DateTime.Now.Ticks);
-        //                            snipingClosestPokestop =
-        //                                pokestopList.ElementAt(r.Next(pokestopList.Count));
-        //                        }
-        //                        else
-        //                        {
-        //                            snipingClosestPokestop = snipingPokestopList.OrderBy(fort =>
-        //                                LocationUtils.CalculateDistanceInMeters(_navigation.CurrentLatitude, _navigation.CurrentLongitude, fort.Latitude, fort.Longitude)
-        //                            ).First();
-        //                        }
-        //                        if (snipingClosestPokestop == null)
-        //                        {
-        //                            logger.Error("No pokestops");
-        //                            continue;
-        //                        }
-        //                        var distance = LocationUtils.CalculateDistanceInMeters(_navigation.CurrentLatitude, _navigation.CurrentLongitude, snipingClosestPokestop.Latitude, snipingClosestPokestop.Longitude);
-        //                        if (distance > 100)
-        //                        {
-        //                            await _navigation.TeleportToPokestop(snipingClosestPokestop);
-        //                        }
-        //                        await RemoveSoftBan(snipingClosestPokestop);
-        //                        var x = _navigation.CurrentLatitude;
-        //                        var y = _navigation.CurrentLongitude;
-        //                        var burst = await CatchBurstPokemon(snipeLocation.Key, snipeLocation.Value);
-        //                        await _navigation.TeleportToLocation(x, y);
-        //                        burst.ForEach(a => a.Invoke());
-        //                    }
-        //                }
-        //                await _navigation.TeleportToPokestop(firstPokestop);
-        //            }
-        //        }
-
-        //        pokestopList = (await _map.GetPokeStops()).Where(t => t.CooldownCompleteTimestampMs < DateTime.UtcNow.ToUnixTime()).ToList();
-        //        if (!pokestopList.Any())
-        //        {
-        //            await _navigation.TeleportToPokestop(firstPokestop);
-        //            pokestopList = (await _map.GetPokeStops()).Where(t => t.CooldownCompleteTimestampMs < DateTime.UtcNow.ToUnixTime()).ToList();
-        //            if (!pokestopList.Any())
-        //            {
-        //                //logger.Error("There is no pokestops nearby, exiting");
-        //                //await Task.Delay(10000);
-        //                //throw new Exception("NO_POKESTOPS");
-        //                continue;
-        //            }
-        //        }
-
-        //        var closestPokestop = pokestopList.OrderBy(fort =>
-        //            LocationUtils.CalculateDistanceInMeters(_navigation.CurrentLatitude, _navigation.CurrentLongitude, fort.Latitude, fort.Longitude)
-        //        ).First();
-
-        //        if (_settings.Teleport)
-        //        {
-        //            var distance = LocationUtils.CalculateDistanceInMeters(_navigation.CurrentLatitude, _navigation.CurrentLongitude, closestPokestop.Latitude, closestPokestop.Longitude);
-        //            if (distance > 100)
-        //            {
-        //                var r = new Random((int)DateTime.Now.Ticks);
-        //                closestPokestop =
-        //                    pokestopList.ElementAt(r.Next(pokestopList.Count));
-        //            }
-        //            logger.Info($"Teleporting to pokestop.");
-        //            await _navigation.TeleportToPokestop(closestPokestop);
-        //        }
-        //        else
-        //        {
-        //            await
-        //                _navigation.HumanLikeWalking(
-        //                    new GeoCoordinate(closestPokestop.Latitude, closestPokestop.Longitude),
-        //                    _settings.WalkingSpeedInKilometerPerHour, async () =>
-        //                    {
-        //                        await Search();
-        //                    });
-        //        }
-
-        //        var pokestopBooty =
-        //            await _fort.SearchFort(closestPokestop.Id, closestPokestop.Latitude, closestPokestop.Longitude);
-        //        if (pokestopBooty.ExperienceAwarded > 0)
-        //        {
-        //            logger.Info(
-        //                $"[{numberOfPokestopsVisited++}] Pokestop rewards XP: {pokestopBooty.ExperienceAwarded}. Gems: {pokestopBooty.GemsAwarded}. Loot: {StringUtils.GetSummedFriendlyNameOfItemAwardList(pokestopBooty.ItemsAwarded)}.");
-        //        }
-        //        else
-        //        {
-        //            await RemoveSoftBan(closestPokestop);
-        //        }
-
-        //        if (_settings.BurstMode)
-        //        {
-        //            await Search();
-        //            var lure = await CatchLurePokemon(closestPokestop);
-        //            lure.Invoke();
-        //        }
-        //        else
-        //        {
-        //            var task = (await CatchBurstPokemon(closestPokestop.Latitude, closestPokestop.Longitude)).ToArray();
-        //            task.ForEach(x => x.Invoke());
-        //        }
-
-        //        await Task.Delay(100);
-        //    }
-        //    _token.ThrowIfCancellationRequested();
-        //}
         private async Task FarmPokestopsTask()
         {
-            FortData firstPokestop = null;
-            var numberOfPokestopsVisited = 0;
-            var returnToStart = DateTime.Now;
-            var pokestopList = (await _map.GetPokeStops()).Where(t => t.CooldownCompleteTimestampMs < DateTime.UtcNow.ToUnixTime()).ToList();
             while (!_token.IsCancellationRequested)
             {
-                var loc = new KeyValuePair<double, double>();
-
-				if (_settings.AutoSnipe && _snipe.SnipeLocations.Count <= 0 && !isFindingAutoSnipeLocations)
-				{
-                    await FetchAutoSnipeLocations();
-                }
-
-                if (_snipe.SnipeLocations.Count > 0)
-                {
-                    if (_snipe.SnipeLocations.TryTake(out loc))
-                    {
-                        logger.Info($"Sniping pokemon at {loc.Key}, {loc.Value}");
-                        await _navigation.TeleportToLocation(loc.Key, loc.Value);
-                        isSniping = true;
-                    }
-                }
-                else if (returnToStart.AddMinutes(2) <= DateTime.Now)
-                {
-                    //var r = new Random((int)DateTime.Now.Ticks);
-                    //var nextLocation = _settings.LocationsToVisit.ElementAt(r.Next(_settings.LocationsToVisit.Count()));
-                    //await _navigation.TeleportToLocation(nextLocation.Key, nextLocation.Value);
-                    await _navigation.TeleportToPokestop(firstPokestop);
-                    returnToStart = DateTime.Now;
-                }
-
-                if (!pokestopList.Any())
-                {
-                    await _navigation.TeleportToPokestop(firstPokestop);
-                    var oldPokestopList =
-                        (await _map.GetPokeStops()).Where(
-                            t => t.CooldownCompleteTimestampMs < DateTime.UtcNow.ToUnixTime()).ToList();
-                    if (oldPokestopList.Any())
-                        pokestopList = oldPokestopList;
-                }
-                var newPokestopList = (await _map.GetPokeStops()).Where(t => t.CooldownCompleteTimestampMs < DateTime.UtcNow.ToUnixTime()).ToList();
-                if (newPokestopList.Any())
-                    pokestopList = newPokestopList;
-                if (!pokestopList.Any())
-                    continue;
-
-                var closestPokestop = pokestopList.OrderBy(
-                    i =>
-                        LocationUtils.CalculateDistanceInMeters(_navigation.CurrentLatitude,
-                            _navigation.CurrentLongitude, i.Latitude, i.Longitude)).First();
-
-                if (firstPokestop == null)
-                    firstPokestop = closestPokestop;
-
-                if (_settings.Teleport)
-                {
-                    var distance = LocationUtils.CalculateDistanceInMeters(_navigation.CurrentLatitude, _navigation.CurrentLongitude, closestPokestop.Latitude, closestPokestop.Longitude);
-
-                    //var fortWithPokemon = (await _map.GetFortWithPokemon());
-                    //var biggestFort = fortWithPokemon.MaxBy(x => x.GymPoints);
-                    if (distance > 100)
-                    {
-                        var r = new Random((int)DateTime.Now.Ticks);
-                        closestPokestop =
-                            pokestopList.ElementAt(r.Next(pokestopList.Count));
-                    }
-                    await _navigation.TeleportToPokestop(closestPokestop);
-                }
-                else
-                {
-                    //                var pokestop =
-                    //await _fort.GetFort(closestPokestop.Id, closestPokestop.Latitude, closestPokestop.Longitude);
-                    //                await
-                    await
-                        _navigation.HumanLikeWalking(
-                            new GeoCoordinate(closestPokestop.Latitude, closestPokestop.Longitude),
-                            _settings.WalkingSpeedInKilometerPerHour, async () =>
-                            {
-                                await Search();
-                            });
-                }
-
-                //logger.Info("Moving to a pokestop");
-
-                var pokestopBooty =
-                    await _fort.SearchFort(closestPokestop.Id, closestPokestop.Latitude, closestPokestop.Longitude);
-                if (pokestopBooty.ExperienceAwarded > 0)
-                {
-                    logger.Info(
-                        $"[{numberOfPokestopsVisited++}] Pokestop rewarded us with {pokestopBooty.ExperienceAwarded} exp. {pokestopBooty.GemsAwarded} gems. {StringUtils.GetSummedFriendlyNameOfItemAwardList(pokestopBooty.ItemsAwarded)}.");
-                    //_stats.ExperienceSinceStarted += pokestopBooty.ExperienceAwarded;
-                    //_stats.
-                }
-                else
-                {
-                    await RemoveSoftBan(closestPokestop);
-                }
-
-                if (isSniping)
-                {
-                    await RemoveSoftBan(closestPokestop);
-                    var x = _navigation.CurrentLatitude;
-                    var y = _navigation.CurrentLongitude;
-                    var burst = await CatchBurstPokemon(loc.Key, loc.Value);
-                    await _navigation.TeleportToLocation(x, y);
-                    burst.ForEach(a => a.Invoke());
-                }
-                else if (_settings.BurstMode)
-                {
-                    await Search();
-                    var lure = await CatchLurePokemon(closestPokestop);
-                    lure.Invoke();
-                }
-                else
-                {
-                    var task = (await CatchBurstPokemon(closestPokestop.Latitude, closestPokestop.Longitude)).ToArray();
-                    task.ForEach(x => x.Invoke());
-                }
-
+                await FarmPokestops();
                 await Task.Delay(100);
-                //}
             }
             _token.ThrowIfCancellationRequested();
         }
-
-        private async Task Search()
-        {
-            var currentLat = _navigation.CurrentLatitude;
-            var currentLong = _navigation.CurrentLongitude;
-            var basePokemon = (await CatchBurstPokemon(currentLat, currentLong)).ToList();
-            //basePokemon.ForEach(x => x.Start());
-            //Task.WaitAll(basePokemon.ToArray());
-
-            var tl = await CatchBurstPokemon(currentLat + .002, currentLong + .002);
-            var bl = await CatchBurstPokemon(currentLat - .002, currentLong + .002);
-            var tr = await CatchBurstPokemon(currentLat + .002, currentLong - .002);
-            var br = await CatchBurstPokemon(currentLat - .002, currentLong - .002);
-            await _navigation.TeleportToLocation(currentLat, currentLong);
-
-            var actionList = basePokemon;
-            basePokemon.AddRange(tl);
-            basePokemon.AddRange(bl);
-            basePokemon.AddRange(tr);
-            basePokemon.AddRange(br);
-            foreach (var action in actionList)
-            {
-                action.Invoke();
-                await Task.Delay(1500);
-            }
-
-            //logger.Info($"Burst mode found {actionList.Count} total pokemon. {actionList.Count - basePokemon.Count} extra from burst");
-
-            //foreach (var act in actionList)
-            //{
-            //    act.Start();
-            //}
-            //Task.WaitAll(actionList.ToArray());
-        }
-
-        private async Task<IEnumerable<Action>> CatchBurstPokemon(double x, double y)
-        {
-            var actionList = new List<Action>();
-            await _navigation.TeleportToLocation(x, y);
-            var pokemon = (await _map.GetNearbyPokemonClosestFirst()).DistinctBy(i => i.SpawnPointId).ToList();
-            foreach (var mapPokemon in pokemon)
-            {
-                if (_settings.UsePokemonToNotCatchFilter && _settings.PokemonsNotToCatch.Contains(mapPokemon.PokemonId))
-                {
-                    continue;
-                }
-                var encounter = await _encounter.EncounterPokemonAsync(mapPokemon);
-                if (encounter.Status == EncounterResponse.Types.Status.EncounterSuccess)
-                {
-                    actionList.Add(async () =>
-                    {
-                        try
-                        {
-                            if (isSniping)
-                                logger.Warn($"Sniping {encounter.WildPokemon.PokemonData.PokemonId}");
-                            await _encounter.CatchPokemon(encounter, mapPokemon);
-                        }
-                        catch (Exception ex)
-                        {
-                            logger.Error(ex, "Unable to catch pokemon");
-                        }
-                    });
-                }
-            }
-            isSniping = false;
-            return actionList;
-        }
-
-        private async Task<Action> CatchLurePokemon(FortData fortData)
-        {
-            Action returnAction = () => { };
-            if (fortData?.LureInfo != null && fortData.LureInfo.ActivePokemonId != PokemonId.Missingno)
-            {
-                var encounterId = fortData.LureInfo.EncounterId;
-                var encounter = await _encounter.EncounterPokemonLure(encounterId, fortData.Id);
-                if (encounter.Result == DiskEncounterResponse.Types.Result.Success)
-                {
-                    returnAction =
-                        async () =>
-                        {
-                            await
-                                _encounter.CatchPokemon(encounterId, fortData.Id, encounter,
-                                    encounter.PokemonData.PokemonId);
-                        };
-                }
-            }
-            return returnAction;
-        }
-
-        //private async Task CatchNearbyPokemon(FortData fortData, bool isSniping)
-        //{
-        //    foreach (var mapPokemon in pokemon)
-        //    {
-        //        if (_settings.UsePokemonToNotCatchFilter && _settings.PokemonsNotToCatch.Contains(mapPokemon.PokemonId))
-        //        {
-        //            continue;
-        //        }
-
-        //        var encounter = await _encounter.EncounterPokemonAsync(mapPokemon);
-        //        if (encounter.Status == EncounterResponse.Types.Status.EncounterSuccess)
-        //        {
-        //            await _encounter.CatchPokemon(encounter, mapPokemon);
-        //        }
-        //        else
-        //        {
-        //            if (encounter.Status != EncounterResponse.Types.Status.EncounterAlreadyHappened)
-        //                logger.Warn($"Unable to catch pokemon. Reason: {encounter.Status}");
-        //        }
-        //    }
-        //    if (isSniping)
-        //        await _navigation.TeleportToPokestop(fortData);
-        //}
 
         private async Task TransferDuplicatePokemon()
         {
@@ -503,7 +144,6 @@ namespace PokemonGo.Haxton.Bot.Bot
         {
             if (_settings.UseLuckyEggsWhileEvolving)
             {
-                logger.Info("Using lucky egg.");
                 LuckyEgg();
             }
             var list = _settings.PokemonsToEvolve;
@@ -530,7 +170,6 @@ namespace PokemonGo.Haxton.Bot.Bot
         {
             if (LuckyEggUsed.AddMinutes(30) < DateTime.Now)
             {
-                LuckyEggUsed = DateTime.Now;
                 var inventoryContent = _inventory.Items;
 
                 var luckyEggs = inventoryContent.Where(p => p.ItemId == ItemId.ItemLuckyEgg);
@@ -538,6 +177,7 @@ namespace PokemonGo.Haxton.Bot.Bot
 
                 if (luckyEgg == null || luckyEgg.Count <= 0)
                     return;
+                LuckyEggUsed = DateTime.Now;
                 logger.Info($"Lucky egg used. {luckyEgg.Count} remaining");
                 await _inventory.UseLuckyEgg();
                 await Task.Delay(2000);
@@ -566,55 +206,6 @@ namespace PokemonGo.Haxton.Bot.Bot
                 await Task.Delay(30000);
             }
             _token.ThrowIfCancellationRequested();
-        }
-
-        private async Task FetchAutoSnipeLocations()
-        {
-            isFindingAutoSnipeLocations = true;
-            List<SnipeLocationInfo> totalSnipeLocations = new List<SnipeLocationInfo>();
-            switch (_settings.AutoSnipeType)
-            {
-                case "pokesnipe":
-                    totalSnipeLocations = await _snipe.FetchSnipeLocations();
-                    break;
-                case "locationFeeder":
-                    totalSnipeLocations = _snipe.FetchSnipeLocationsFromFeeder(_token);
-                    break;
-                default:
-                    break;
-            }
-
-            if (totalSnipeLocations != null)
-            {
-                List<SnipeLocationInfo> filteredSnipeLocations = new List<SnipeLocationInfo>();
-
-                //logger.Info($"Total snipes found: {totalSnipeLocations.Count}");
-
-                for (int i = 0; i < totalSnipeLocations.Count; i++)
-                {
-                    var pokemonId = (PokemonId)Enum.Parse(typeof(PokemonId), totalSnipeLocations[i].name);
-                    if (!_settings.PokemonsNotToAutoSnipe.Contains(pokemonId) && !previousFoundSnipes.Any(totalSnipeLocations[i].UniqueId.Contains))
-                    {
-                        filteredSnipeLocations.Add(totalSnipeLocations[i]);
-                    }
-                }
-                if (filteredSnipeLocations.Count > 0)
-                {
-                    logger.Info($"Filtered snipes found: {filteredSnipeLocations.Count}");
-                }
-                for (int i = 0; i < filteredSnipeLocations.Count; i++)
-                {
-                    previousFoundSnipes.Add(filteredSnipeLocations[i].UniqueId);
-                    string[] coords = filteredSnipeLocations[i].coords.Split(',');
-                    logger.Info($"Added Snipe {i + 1}: {filteredSnipeLocations[i].name} at {filteredSnipeLocations[i].coords}");
-                    _snipe.AddNewSnipe(coords);
-                }
-            }
-            else
-            {
-                logger.Warn($"Failed to fetch Auto Snipe locations from http://pokesnipers.com/api/v1/pokemon.json - Retrying...");
-            }
-            isFindingAutoSnipeLocations = false;
         }
     }
 }

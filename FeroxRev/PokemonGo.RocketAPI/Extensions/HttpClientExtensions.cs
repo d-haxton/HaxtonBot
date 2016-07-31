@@ -1,6 +1,7 @@
 ﻿using Google.Protobuf;
 using POGOProtos.Networking.Envelopes;
 using PokemonGo.RocketAPI.Exceptions;
+using System;
 using System.Diagnostics;
 using System.Net.Http;
 using System.Threading;
@@ -16,26 +17,24 @@ namespace PokemonGo.RocketAPI.Extensions
         {
             var attempts = 0;
             ResponseEnvelope response;
-            TResponsePayload parsedPayload;
             do
             {
                 Debug.WriteLine($"Requesting {typeof(TResponsePayload).Name}");
-                Thread.Sleep(50);
+                Thread.Sleep(150);
                 response = await PostProto<TRequest>(client, url, requestEnvelope);
 
                 //Decode payload
                 //todo: multi-payload support
                 attempts++;
-            } while (response.Returns.Count == 0 && attempts < 10);
-            if(response.StatusCode == 102)
+            } while (response.Returns.Count == 0 && attempts < 25);
+            if (attempts >= 25)
             {
-                throw new InvalidResponseException();
-            }
-            if (attempts >= 10)
+                Console.WriteLine($"Failed to request packet {typeof(TResponsePayload).Name}");
                 return new TResponsePayload();
+            }
 
             var payload = response.Returns[0];
-            parsedPayload = new TResponsePayload();
+            var parsedPayload = new TResponsePayload();
             parsedPayload.MergeFrom(payload);
             return parsedPayload;
         }
