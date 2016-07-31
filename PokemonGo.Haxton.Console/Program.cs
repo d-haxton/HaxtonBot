@@ -191,6 +191,7 @@ namespace PokemonGo.Haxton.Console
                 {
                     System.Console.WriteLine("Exception reading from console: " + ex.Message);
                 }
+                await Task.Delay(100);
             }
             _token.ThrowIfCancellationRequested();
         }
