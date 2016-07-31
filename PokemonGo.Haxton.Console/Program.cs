@@ -38,7 +38,8 @@ namespace PokemonGo.Haxton.Console
             {
                 try
                 {
-                    List<Task> currentTasks = new List<Task>(); 
+                    List<Task> currentTasks = new List<Task>();
+                    _LoggedIn = false;
                     container = new Container(_ =>
                     {
                         _.For<IApiBaseRpc>().Use<ApiBaseRpc>().Singleton();
@@ -69,6 +70,11 @@ namespace PokemonGo.Haxton.Console
                     while (_LoggedIn == false && !_cancelTokenSource.Token.IsCancellationRequested)
                     {
                         Thread.Sleep(100);
+                    }
+                    if (_LoggedIn == false)
+                    {
+                        logger.Warn("Failed to log in, retrying in 5 seconds");
+                        Thread.Sleep(5000);
                     }
                     if (_cancelTokenSource.Token.IsCancellationRequested)
                     {
