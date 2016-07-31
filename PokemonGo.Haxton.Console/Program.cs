@@ -66,7 +66,7 @@ namespace PokemonGo.Haxton.Console
                         _.For<ILogicSettings>().Use<LogicSettings>().Singleton();
                     });
                     currentTasks.Add(RunTask(_cancelTokenSource.Token));
-                    while (_LoggedIn == false)
+                    while (_LoggedIn == false && !_cancelTokenSource.Token.IsCancellationRequested)
                     {
                         Thread.Sleep(100);
                     }
