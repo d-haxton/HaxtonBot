@@ -30,9 +30,9 @@ namespace PokemonGo.Haxton.Bot.Bot
     public class PoGoBot : IPoGoBot
     {
         private static readonly Logger logger = LogManager.GetCurrentClassLogger();
-		private static List<string> previousFoundSnipes = new List<string>();
+        private static List<string> previousFoundSnipes = new List<string>();
 
-		private DateTime LuckyEggUsed { get; set; }
+        private DateTime LuckyEggUsed { get; set; }
         private readonly IPoGoNavigation _navigation;
         private readonly IPoGoInventory _inventory;
         private readonly IPoGoEncounter _encounter;
@@ -45,8 +45,8 @@ namespace PokemonGo.Haxton.Bot.Bot
         public bool ShouldRecycleItems { get; set; }
         public bool ShouldEvolvePokemon { get; set; }
         public bool ShouldTransferPokemon { get; set; }
-		public bool isSniping { get; private set; }
-		public bool isFindingAutoSnipeLocations { get; private set; }
+        public bool isSniping { get; private set; }
+        public bool isFindingAutoSnipeLocations { get; private set; }
 
         public PoGoBot(IPoGoNavigation navigation, IPoGoInventory inventory, IPoGoEncounter encounter, IPoGoSnipe snipe, IPoGoFort fort, IPoGoMap map, ILogicSettings settings)
         {
@@ -93,6 +93,148 @@ namespace PokemonGo.Haxton.Bot.Bot
             while (pokestopBooty.Result == FortSearchResponse.Types.Result.Success);
         }
 
+
+        //private async Task FarmPokestopsTask()
+        //{
+            
+        //    int numberOfPokestopsVisited = 0;
+        //    var returnToStart = DateTime.Now;
+        //    var pokestopList = (await _map.GetPokeStops()).ToList();
+        //    if (!pokestopList.Any())
+        //    {
+        //        logger.Error("There is no pokestops nearby, exiting");
+        //        await Task.Delay(10000);
+        //        throw new Exception("NO_POKESTOPS");
+        //    }
+        //    FortData firstPokestop = pokestopList.OrderBy(
+        //            i =>
+        //                LocationUtils.CalculateDistanceInMeters(_navigation.CurrentLatitude,
+        //                    _navigation.CurrentLongitude, i.Latitude, i.Longitude)).First();
+        //    while (!_token.IsCancellationRequested)
+        //    {
+        //        if (_settings.AutoSnipe)
+        //        {
+        //            await FetchAutoSnipeLocations();
+        //            while (isFindingAutoSnipeLocations)
+        //            {
+        //                await Task.Delay(100);
+        //            }
+        //            if (_snipe.SnipeLocations.Count > 0)
+        //            {
+        //                var snipeLocation = new KeyValuePair<double, double>();
+        //                for (int i = 0; i <= _snipe.SnipeLocations.Count; i++)
+        //                {
+        //                    if (_snipe.SnipeLocations.TryTake(out snipeLocation))
+        //                    {
+        //                        logger.Info($"Sniping pokemon at {snipeLocation.Key}, {snipeLocation.Value}");
+        //                        await _navigation.TeleportToLocation(snipeLocation.Key, snipeLocation.Value);
+        //                        var snipingPokestopList = (await _map.GetPokeStops()).Where(t => t.CooldownCompleteTimestampMs < DateTime.UtcNow.ToUnixTime()).ToList();
+        //                        FortData snipingClosestPokestop = null;
+        //                        if (!snipingPokestopList.Any())
+        //                        {
+        //                            //logger.Warn("No pokestops near sniping target, skipping");
+        //                            //continue;
+        //                            var r = new Random((int)DateTime.Now.Ticks);
+        //                            snipingClosestPokestop =
+        //                                pokestopList.ElementAt(r.Next(pokestopList.Count));
+        //                        }
+        //                        else
+        //                        {
+        //                            snipingClosestPokestop = snipingPokestopList.OrderBy(fort =>
+        //                                LocationUtils.CalculateDistanceInMeters(_navigation.CurrentLatitude, _navigation.CurrentLongitude, fort.Latitude, fort.Longitude)
+        //                            ).First();
+        //                        }
+        //                        if (snipingClosestPokestop == null)
+        //                        {
+        //                            logger.Error("No pokestops");
+        //                            continue;
+        //                        }
+        //                        var distance = LocationUtils.CalculateDistanceInMeters(_navigation.CurrentLatitude, _navigation.CurrentLongitude, snipingClosestPokestop.Latitude, snipingClosestPokestop.Longitude);
+        //                        if (distance > 100)
+        //                        {
+        //                            await _navigation.TeleportToPokestop(snipingClosestPokestop);
+        //                        }
+        //                        await RemoveSoftBan(snipingClosestPokestop);
+        //                        var x = _navigation.CurrentLatitude;
+        //                        var y = _navigation.CurrentLongitude;
+        //                        var burst = await CatchBurstPokemon(snipeLocation.Key, snipeLocation.Value);
+        //                        await _navigation.TeleportToLocation(x, y);
+        //                        burst.ForEach(a => a.Invoke());
+        //                    }
+        //                }
+        //                await _navigation.TeleportToPokestop(firstPokestop);
+        //            }
+        //        }
+
+        //        pokestopList = (await _map.GetPokeStops()).Where(t => t.CooldownCompleteTimestampMs < DateTime.UtcNow.ToUnixTime()).ToList();
+        //        if (!pokestopList.Any())
+        //        {
+        //            await _navigation.TeleportToPokestop(firstPokestop);
+        //            pokestopList = (await _map.GetPokeStops()).Where(t => t.CooldownCompleteTimestampMs < DateTime.UtcNow.ToUnixTime()).ToList();
+        //            if (!pokestopList.Any())
+        //            {
+        //                //logger.Error("There is no pokestops nearby, exiting");
+        //                //await Task.Delay(10000);
+        //                //throw new Exception("NO_POKESTOPS");
+        //                continue;
+        //            }
+        //        }
+
+        //        var closestPokestop = pokestopList.OrderBy(fort =>
+        //            LocationUtils.CalculateDistanceInMeters(_navigation.CurrentLatitude, _navigation.CurrentLongitude, fort.Latitude, fort.Longitude)
+        //        ).First();
+
+        //        if (_settings.Teleport)
+        //        {
+        //            var distance = LocationUtils.CalculateDistanceInMeters(_navigation.CurrentLatitude, _navigation.CurrentLongitude, closestPokestop.Latitude, closestPokestop.Longitude);
+        //            if (distance > 100)
+        //            {
+        //                var r = new Random((int)DateTime.Now.Ticks);
+        //                closestPokestop =
+        //                    pokestopList.ElementAt(r.Next(pokestopList.Count));
+        //            }
+        //            logger.Info($"Teleporting to pokestop.");
+        //            await _navigation.TeleportToPokestop(closestPokestop);
+        //        }
+        //        else
+        //        {
+        //            await
+        //                _navigation.HumanLikeWalking(
+        //                    new GeoCoordinate(closestPokestop.Latitude, closestPokestop.Longitude),
+        //                    _settings.WalkingSpeedInKilometerPerHour, async () =>
+        //                    {
+        //                        await Search();
+        //                    });
+        //        }
+
+        //        var pokestopBooty =
+        //            await _fort.SearchFort(closestPokestop.Id, closestPokestop.Latitude, closestPokestop.Longitude);
+        //        if (pokestopBooty.ExperienceAwarded > 0)
+        //        {
+        //            logger.Info(
+        //                $"[{numberOfPokestopsVisited++}] Pokestop rewards XP: {pokestopBooty.ExperienceAwarded}. Gems: {pokestopBooty.GemsAwarded}. Loot: {StringUtils.GetSummedFriendlyNameOfItemAwardList(pokestopBooty.ItemsAwarded)}.");
+        //        }
+        //        else
+        //        {
+        //            await RemoveSoftBan(closestPokestop);
+        //        }
+
+        //        if (_settings.BurstMode)
+        //        {
+        //            await Search();
+        //            var lure = await CatchLurePokemon(closestPokestop);
+        //            lure.Invoke();
+        //        }
+        //        else
+        //        {
+        //            var task = (await CatchBurstPokemon(closestPokestop.Latitude, closestPokestop.Longitude)).ToArray();
+        //            task.ForEach(x => x.Invoke());
+        //        }
+
+        //        await Task.Delay(100);
+        //    }
+        //    _token.ThrowIfCancellationRequested();
+        //}
         private async Task FarmPokestopsTask()
         {
             FortData firstPokestop = null;
@@ -105,7 +247,7 @@ namespace PokemonGo.Haxton.Bot.Bot
 
 				if (_settings.AutoSnipe && _snipe.SnipeLocations.Count <= 0 && !isFindingAutoSnipeLocations)
 				{
-					await FetchAutoSnipeLocations();
+                    await FetchAutoSnipeLocations();
                 }
 
                 if (_snipe.SnipeLocations.Count > 0)
@@ -283,7 +425,7 @@ namespace PokemonGo.Haxton.Bot.Bot
                     });
                 }
             }
-			isSniping = false;
+            isSniping = false;
             return actionList;
         }
 
@@ -426,40 +568,53 @@ namespace PokemonGo.Haxton.Bot.Bot
             _token.ThrowIfCancellationRequested();
         }
 
-		private async Task FetchAutoSnipeLocations()
-		{
-			isFindingAutoSnipeLocations = true;
-            List<SnipeLocationInfo> totalSnipeLocations = await _snipe.FetchSnipeLocations();
+        private async Task FetchAutoSnipeLocations()
+        {
+            isFindingAutoSnipeLocations = true;
+            List<SnipeLocationInfo> totalSnipeLocations = new List<SnipeLocationInfo>();
+            switch (_settings.AutoSnipeType)
+            {
+                case "pokesnipe":
+                    totalSnipeLocations = await _snipe.FetchSnipeLocations();
+                    break;
+                case "locationFeeder":
+                    totalSnipeLocations = _snipe.FetchSnipeLocationsFromFeeder(_token);
+                    break;
+                default:
+                    break;
+            }
 
-			if (totalSnipeLocations != null)
-			{
-				List<SnipeLocationInfo> filteredSnipeLocations = new List<SnipeLocationInfo>();
+            if (totalSnipeLocations != null)
+            {
+                List<SnipeLocationInfo> filteredSnipeLocations = new List<SnipeLocationInfo>();
 
-				logger.Info($"Total snipes found: {totalSnipeLocations.Count}");
+                //logger.Info($"Total snipes found: {totalSnipeLocations.Count}");
 
-				for (int i = 0; i < totalSnipeLocations.Count; i++)
-				{
-					var pokemonId = (PokemonId)Enum.Parse(typeof(PokemonId), totalSnipeLocations[i].name);
-					if (!_settings.PokemonsNotToAutoSnipe.Contains(pokemonId) && !previousFoundSnipes.Any(totalSnipeLocations[i].UniqueId.Contains))
-					{
-						filteredSnipeLocations.Add(totalSnipeLocations[i]);
-					}
-				}
-
-				logger.Info($"Filtered snipes found: {filteredSnipeLocations.Count}");
-				for (int i = 0; i < filteredSnipeLocations.Count; i++)
-				{
-					previousFoundSnipes.Add(filteredSnipeLocations[i].UniqueId);
-					string[] coords = filteredSnipeLocations[i].coords.Split(',');
-					logger.Info($"Added Snipe {i + 1}: {filteredSnipeLocations[i].name} at {filteredSnipeLocations[i].coords}");
-					_snipe.AddNewSnipe(coords);
-				}
-			} 
-			else 
-			{
-				logger.Warn($"Failed to fetch Auto Snipe locations from http://pokesnipers.com/api/v1/pokemon.json - Retrying...");
-			}
-			isFindingAutoSnipeLocations = false;
+                for (int i = 0; i < totalSnipeLocations.Count; i++)
+                {
+                    var pokemonId = (PokemonId)Enum.Parse(typeof(PokemonId), totalSnipeLocations[i].name);
+                    if (!_settings.PokemonsNotToAutoSnipe.Contains(pokemonId) && !previousFoundSnipes.Any(totalSnipeLocations[i].UniqueId.Contains))
+                    {
+                        filteredSnipeLocations.Add(totalSnipeLocations[i]);
+                    }
+                }
+                if (filteredSnipeLocations.Count > 0)
+                {
+                    logger.Info($"Filtered snipes found: {filteredSnipeLocations.Count}");
+                }
+                for (int i = 0; i < filteredSnipeLocations.Count; i++)
+                {
+                    previousFoundSnipes.Add(filteredSnipeLocations[i].UniqueId);
+                    string[] coords = filteredSnipeLocations[i].coords.Split(',');
+                    logger.Info($"Added Snipe {i + 1}: {filteredSnipeLocations[i].name} at {filteredSnipeLocations[i].coords}");
+                    _snipe.AddNewSnipe(coords);
+                }
+            }
+            else
+            {
+                logger.Warn($"Failed to fetch Auto Snipe locations from http://pokesnipers.com/api/v1/pokemon.json - Retrying...");
+            }
+            isFindingAutoSnipeLocations = false;
         }
     }
 }

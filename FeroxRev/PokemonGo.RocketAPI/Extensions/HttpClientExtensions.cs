@@ -27,6 +27,10 @@ namespace PokemonGo.RocketAPI.Extensions
                 //todo: multi-payload support
                 attempts++;
             } while (response.Returns.Count == 0 && attempts < 10);
+            if(response.StatusCode == 102)
+            {
+                throw new InvalidResponseException();
+            }
             if (attempts >= 10)
                 return new TResponsePayload();
 

@@ -34,8 +34,9 @@ namespace PokemonGo.Haxton.Bot.Settings
 			LocationsToVisit = GetLocations("UserSettings\\LocationsToCycle.cfg");
             BurstMode = Convert.ToBoolean(ConfigurationManager.AppSettings["UseBurstMode"]);
 			AutoSnipe = Convert.ToBoolean(ConfigurationManager.AppSettings["AutoSnipe"]);
-			//
-		}
+            AutoSnipeType = ConfigurationManager.AppSettings["AutoSnipeType"];
+            //
+        }
 
         private IEnumerable<KeyValuePair<double, double>> GetLocations(string usersettingsLocationstocycleCfg)
         {
@@ -104,5 +105,6 @@ namespace PokemonGo.Haxton.Bot.Settings
 		public ICollection<PokemonId> PokemonsNotToAutoSnipe { get; }
 		public bool Teleport { get; set; }
 		public bool AutoSnipe { get; set; }
-	}
+        public string AutoSnipeType { get; set; }
+    }
 }

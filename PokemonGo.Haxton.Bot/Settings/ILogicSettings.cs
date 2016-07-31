@@ -27,6 +27,7 @@ namespace PokemonGo.Haxton.Bot
         bool EvolveAllPokemonAboveIv { get; }
         float EvolveAboveIvValue { get; }
 		bool AutoSnipe { get; }
+        string AutoSnipeType { get; }
 
 		Dictionary<ItemId, int> ItemRecycleFilter { get; }
 
