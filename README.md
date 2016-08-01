@@ -10,15 +10,14 @@ Discord: https://discord.gg/Xt5JnHS
 
 Donate: https://donate.doctorswithoutborders.org/onetime.cfm
 
-Settings: Open up app.config within your PokemonGo.Haxton.Console folder/project and edit that shiznit.
+Settings: Open up app.config within your PokemonGo.Haxton.Console folder/project and edit that stuff.
 <br/>
 
 <h2><a name="features">Features</a></h2>
 
 Teleport. 
 Fastest exp per hour.
-Shits quick yo.
-
+Its fast.
 <br/>
 
 <h2><a name="credits">Credits</a></h2>
