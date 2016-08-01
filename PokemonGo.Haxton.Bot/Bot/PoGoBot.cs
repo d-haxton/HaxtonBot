@@ -200,7 +200,7 @@ namespace PokemonGo.Haxton.Bot.Bot
                     }
                     catch (Exception ex)
                     {
-                        logger.Warn(ex, "Failed recyclying items.");
+                        logger.Warn(ex, $"Failed recyclying item: {x.ItemId}.");
                     }
                 });
                 await Task.Delay(30000);
