@@ -1,5 +1,6 @@
 ﻿using MoreLinq;
 using NLog;
+using NLog.Fluent;
 using POGOProtos.Enums;
 using POGOProtos.Inventory.Item;
 using POGOProtos.Map.Fort;
@@ -12,6 +13,7 @@ using System;
 using System.Collections.Generic;
 using System.Device.Location;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace PokemonGo.Haxton.Bot.Bot
@@ -22,12 +24,13 @@ namespace PokemonGo.Haxton.Bot.Bot
         bool ShouldEvolvePokemon { get; set; }
         bool ShouldTransferPokemon { get; set; }
 
-        List<Task> Run();
+        List<Task> Run(CancellationToken _token);
     }
 
     public class PoGoBot : IPoGoBot
     {
         private static readonly Logger logger = LogManager.GetCurrentClassLogger();
+        private static List<string> previousFoundSnipes = new List<string>();
 
         private DateTime LuckyEggUsed { get; set; }
         private readonly IPoGoNavigation _navigation;
@@ -36,6 +39,7 @@ namespace PokemonGo.Haxton.Bot.Bot
         private readonly IPoGoSnipe _snipe;
         private readonly IPoGoPokestop _pokestop;
         private readonly ILogicSettings _settings;
+        private CancellationToken _token;
 
         public bool ShouldRecycleItems { get; set; }
         public bool ShouldEvolvePokemon { get; set; }
@@ -57,18 +61,19 @@ namespace PokemonGo.Haxton.Bot.Bot
             ShouldRecycleItems = _settings.ItemRecycleFilter.Count > 0;
         }
 
-        public List<Task> Run()
+        public List<Task> Run(CancellationToken _token)
         {
+            this._token = _token;
             logger.Info("Starting bot.");
 
             var taskList = new List<Task>
             {
                 Task
-                    .Run(RecycleItemsTask),
+                    .Run(RecycleItemsTask, _token),
                 Task
-                    .Run(TransferDuplicatePokemon),
+                    .Run(TransferDuplicatePokemon, _token),
                 Task
-                    .Run(FarmPokestopsTask)
+                    .Run(FarmPokestopsTask, _token)
             };
 
             return taskList;
@@ -102,16 +107,17 @@ namespace PokemonGo.Haxton.Bot.Bot
 
         private async Task FarmPokestopsTask()
         {
-            while (true)
+            while (!_token.IsCancellationRequested)
             {
                 await FarmPokestops();
                 await Task.Delay(100);
             }
+            _token.ThrowIfCancellationRequested();
         }
 
         private async Task TransferDuplicatePokemon()
         {
-            while (ShouldTransferPokemon)
+            while (!_token.IsCancellationRequested && ShouldTransferPokemon)
             {
                 EvolvePokemonTask();
                 var duplicatePokemon = _inventory.GetDuplicatePokemonForTransfer(_settings.KeepPokemonsThatCanEvolve, _settings.PrioritizeIvOverCp, _settings.PokemonsNotToTransfer);
@@ -131,6 +137,7 @@ namespace PokemonGo.Haxton.Bot.Bot
                 }
                 await Task.Delay(30000);
             }
+            _token.ThrowIfCancellationRequested();
         }
 
         private void EvolvePokemonTask()
@@ -180,7 +187,7 @@ namespace PokemonGo.Haxton.Bot.Bot
 
         private async Task RecycleItemsTask()
         {
-            while (ShouldRecycleItems)
+            while (!_token.IsCancellationRequested && ShouldRecycleItems)
             {
                 var itemsToThrowAway = _inventory.GetItemsToRecycle(_settings.ItemRecycleFilter).ToList();
                 itemsToThrowAway.ForEach(async x =>
@@ -198,6 +205,7 @@ namespace PokemonGo.Haxton.Bot.Bot
                 });
                 await Task.Delay(30000);
             }
+            _token.ThrowIfCancellationRequested();
         }
     }
 }

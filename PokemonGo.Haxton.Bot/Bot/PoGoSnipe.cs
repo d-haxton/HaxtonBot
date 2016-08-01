@@ -4,16 +4,21 @@ using PokemonGo.Haxton.Bot.Navigation;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.Globalization;
+using System.IO;
 using System.Linq;
-using System.Text;
+using System.Net;
+using System.Net.Sockets;
+using System.Threading;
 using System.Threading.Tasks;
+using System.Web.Script.Serialization;
 
 namespace PokemonGo.Haxton.Bot.Bot
 {
     public interface IPoGoSnipe
     {
         ConcurrentBag<KeyValuePair<double, double>> SnipeLocations { get; }
-
         void AddNewSnipe(double x, double y);
 
         Task DoSnipe();
