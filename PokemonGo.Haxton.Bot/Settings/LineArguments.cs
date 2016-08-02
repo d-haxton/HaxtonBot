@@ -1,10 +1,5 @@
-﻿using PokemonGo.RocketAPI;
-using PokemonGo.RocketAPI.Enums;
-using System;
-using System.Threading;
+﻿using System;
 using System.Configuration;
-using System.Globalization;
-using System.IO;
 using Mono.Options;
 using NLog;
 
@@ -59,27 +54,45 @@ namespace PokemonGo.Haxton.Bot.Settings
                     ExeConfigurationFileMap configMap = new ExeConfigurationFileMap();
                     configMap.ExeConfigFilename = config;
                     Config = ConfigurationManager.OpenMappedExeConfiguration(configMap, ConfigurationUserLevel.None);
+                    if (!Config.HasFile)
+                    {
+                        throw new OptionException("config argument could not find the specified file at " + Config.FilePath, "config=");
+                    }
                 } },
                 { "auth=", "Type of login 'Google' or 'Ptc'", auth => {
                     if (auth != "Google" && auth != "Ptc")
+                    {
                         throw new OptionException("auth arugment must be either 'Google' or 'Ptc'", "auth=");
+                    }
                     ChangeConfigKey("AccountType", auth);
                 } },
                 { "username=", "Username of Google or Ptc account", username => {
                     if (Config.AppSettings.Settings["AccountType"].Value == "Google")
+                    {
                         ChangeConfigKey("GoogleEmail", username);
+                    }
                     else if (Config.AppSettings.Settings["AccountType"].Value == "Ptc")
+                    {
                         ChangeConfigKey("PtcUsername", username);
+                    }
                     else
+                    {
                         throw new OptionException("Invalid auth specified. Use -auth= or edit the config to set auth type", "username=");
+                    }
                 } },
                 { "password=", "Password of Google or Ptc account", password => {
                     if (Config.AppSettings.Settings["AccountType"].Value == "Google")
+                    {
                         ChangeConfigKey("GooglePassword", password);
+                    }
                     else if (Config.AppSettings.Settings["AccountType"].Value == "Ptc")
+                    {
                         ChangeConfigKey("PtcPassword", password);
+                    }
                     else
+                    {
                         throw new OptionException("Invalid auth specified. Use -auth= or edit the config to set auth type", "password=");
+                    }
                 } },
                 { "latitude=", "Default latitude of Pokemon trainer", latitude => ChangeConfigKey("DefaultLatitude", latitude)},
                 { "longitude=", "Default longitude of Pokemon trainer", longitude => ChangeConfigKey("DefaultLongitude", longitude)},

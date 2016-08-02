@@ -150,8 +150,17 @@ namespace PokemonGo.Haxton.Console
                                 logger.Fatal("   Exception: {0}", v.GetType().Name);
                         }
                     }
+                    catch (Exception e)
+                    {
+                        logger.Error(e);
+                    }
                     finally
                     {
+                        if (LineArguments.ShowHelp)
+                        {
+                            ShouldRun = false;
+                            _cancelTokenSource.Cancel();
+                        }
                         if (!_token.IsCancellationRequested)
                         {
                             logger.Fatal("Task crashed or cancelled");
