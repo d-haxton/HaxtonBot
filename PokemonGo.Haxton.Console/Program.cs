@@ -65,7 +65,8 @@ namespace PokemonGo.Haxton.Console
                         _.For<IPoGoLogin>().Use<PoGoLogin>().Singleton();
                         _.For<IPoGoFort>().Use<PoGoFort>().Singleton();
 
-                        _.For<ISettings>().Use<Settings>().Singleton();
+                        _.For<ILineArguments>().Use<LineArguments>().Singleton();
+                        _.For<ISettings>().Use<Settings>().Ctor<string[]>().Is(args).Singleton();
                         _.For<ILogicSettings>().Use<LogicSettings>().Singleton();
                     });
                     currentTasks.Add(RunTask(_cancelTokenSource.Token));
@@ -73,7 +74,7 @@ namespace PokemonGo.Haxton.Console
                     {
                         Thread.Sleep(100);
                     }
-                    if (_LoggedIn == false)
+                    if (_LoggedIn == false && !LineArguments.ShowHelp)
                     {
                         logger.Warn("Failed to log in, retrying in 5 seconds");
                         Thread.Sleep(5000);
@@ -121,12 +122,20 @@ namespace PokemonGo.Haxton.Console
                     try
                     {
                         var login = container.GetInstance<IPoGoLogin>();
-                        login.DoLogin();
-                        var bot = container.GetInstance<IPoGoBot>();
-                        task = bot.Run(_token);
-                        task.Add(Task.Run(async () => { await UpdateConsole(_token); }, _token));
-                        _LoggedIn = true;
-                        Task.WaitAny(task.ToArray());
+                        if (LineArguments.ShowHelp)
+                        {
+                            ShouldRun = false;
+                            _cancelTokenSource.Cancel();
+                        }
+                        else
+                        {
+                            login.DoLogin();
+                            var bot = container.GetInstance<IPoGoBot>();
+                            task = bot.Run(_token);
+                            task.Add(Task.Run(async () => { await UpdateConsole(_token); }, _token));
+                            _LoggedIn = true;
+                            Task.WaitAny(task.ToArray());
+                        }
                     }
                     catch (AggregateException e)
                     {
@@ -143,7 +152,10 @@ namespace PokemonGo.Haxton.Console
                     }
                     finally
                     {
-                        logger.Fatal("Task crashed or cancelled");
+                        if (!_token.IsCancellationRequested)
+                        {
+                            logger.Fatal("Task crashed or cancelled");
+                        }
                         // for the case some tasks crashed
                         if (_token.CanBeCanceled)
                         {
