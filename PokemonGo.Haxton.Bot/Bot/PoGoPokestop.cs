@@ -54,22 +54,29 @@ namespace PokemonGo.Haxton.Bot.Bot
             get
             {
                 var mapObjects = _map.GetMapObjects().GetAwaiter().GetResult();
-                var pokeStops = mapObjects.MapCells
-                    .SelectMany(i => i.Forts)
-                    .Where(
-                        i =>
-                            i.Type == FortType.Checkpoint &&
-                            i.CooldownCompleteTimestampMs < DateTime.UtcNow.ToUnixTime() &&
-                            ( // Make sure PokeStop is within max travel distance, unless it's set to 0.
-                                LocationUtils.CalculateDistanceInMeters(
-                                    _settings.DefaultLatitude, _settings.DefaultLongitude,
-                                    i.Latitude, i.Longitude) < _logicSettings.MaxTravelDistanceInMeters) ||
-                            _logicSettings.MaxTravelDistanceInMeters == 0
-                    )
-                    .OrderBy(i => LocationUtils.CalculateDistanceInMeters(_navigation.CurrentLatitude,
-                            _navigation.CurrentLongitude, i.Latitude, i.Longitude));
-                //logger.Info($"{pokeStops.Count()} pokestops found.");
-                return pokeStops;
+
+                logger.Trace($"dumping mapObjects: {mapObjects}");
+
+                var pokeStops = mapObjects.MapCells.SelectMany(i => i.Forts).Where(i => i.Type == FortType.Checkpoint);
+                var pokeStopsAvailable = mapObjects.MapCells
+                                          .SelectMany(i => i.Forts)
+                                          .Where(i =>
+                                                 {
+                                                     var isCheckpoint = i.Type == FortType.Checkpoint;
+                                                     var cooldownComplete = i.CooldownCompleteTimestampMs < DateTime.UtcNow.ToUnixTime();
+                                                     var distanceInMeters = LocationUtils.CalculateDistanceInMeters(_settings.DefaultLatitude, _settings.DefaultLongitude, i.Latitude, i.Longitude);
+                                                     var withinReach = distanceInMeters < _logicSettings.MaxTravelDistanceInMeters;
+                                                     var doNotCareIfCheckpointCanReach = _logicSettings.MaxTravelDistanceInMeters == 0;
+
+                                                     return isCheckpoint && cooldownComplete &&
+                                                            (withinReach || doNotCareIfCheckpointCanReach);
+                                                 })
+                                          .OrderBy(i => LocationUtils.CalculateDistanceInMeters(_navigation.CurrentLatitude,
+                                                                                                _navigation.CurrentLongitude,
+                                                                                                i.Latitude,
+                                                                                                i.Longitude));
+                logger.Info($"{pokeStops.Count()} pokestops found. {pokeStopsAvailable.Count()} available");
+                return pokeStopsAvailable;
             }
         }
 
