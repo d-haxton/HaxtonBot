@@ -6,6 +6,8 @@
 <!-- disclaimer -->
 ![alt text][1.1] <strong><em> The contents of this repo are a proof of concept and are for educational use only </em></strong>![alt text][1.1]<br/>
 
+Git will be updated when I can figure out what to do against the leaching community that builds and release as "premium hero configs", if you would like access to the source. Please contact me on discord.
+
 Discord: https://discord.gg/Xt5JnHS
 
 Donate: https://donate.doctorswithoutborders.org/onetime.cfm
