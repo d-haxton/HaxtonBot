@@ -9,18 +9,20 @@ namespace PokemonGo.Haxton.Bot.Settings
 {
     public class Settings : ISettings
     {
-        public Settings()
+        public Settings(LineArguments lineArguments, string[] args)
         {
-            AuthType =
-                (AuthType)Enum.Parse(typeof(AuthType), ConfigurationManager.AppSettings["AccountType"]);
-            DefaultLatitude = Convert.ToDouble(ConfigurationManager.AppSettings["DefaultLatitude"], CultureInfo.InvariantCulture);
-            DefaultLongitude = Convert.ToDouble(ConfigurationManager.AppSettings["DefaultLongitude"], CultureInfo.InvariantCulture);
-            DefaultAltitude = Convert.ToDouble(ConfigurationManager.AppSettings["DefaultAltitude"], CultureInfo.InvariantCulture);
-            PtcUsername = ConfigurationManager.AppSettings["PtcUsername"];
-            PtcPassword = ConfigurationManager.AppSettings["PtcPassword"];
+            Configuration config = lineArguments.GetConfig(args);
 
-            GoogleUsername = ConfigurationManager.AppSettings["GoogleEmail"];
-            GooglePassword = ConfigurationManager.AppSettings["GooglePassword"];
+            AuthType =
+                (AuthType)Enum.Parse(typeof(AuthType), config.AppSettings.Settings["AccountType"].Value);
+            DefaultLatitude = Convert.ToDouble(config.AppSettings.Settings["DefaultLatitude"].Value, CultureInfo.InvariantCulture);
+            DefaultLongitude = Convert.ToDouble(config.AppSettings.Settings["DefaultLongitude"].Value, CultureInfo.InvariantCulture);
+            DefaultAltitude = Convert.ToDouble(config.AppSettings.Settings["DefaultAltitude"].Value, CultureInfo.InvariantCulture);
+            PtcUsername = config.AppSettings.Settings["PtcUsername"].Value;
+            PtcPassword = config.AppSettings.Settings["PtcPassword"].Value;
+
+            GoogleUsername = config.AppSettings.Settings["GoogleEmail"].Value;
+            GooglePassword = config.AppSettings.Settings["GooglePassword"].Value;
         }
 
         public AuthType AuthType { get; }

@@ -27,10 +27,10 @@ namespace PokemonGo.Haxton.Bot.Settings
             GpxFile = ConfigurationManager.AppSettings["GpxFile"];
             UseLuckyEggsWhileEvolving = Convert.ToBoolean(ConfigurationManager.AppSettings["UseLuckyEggs"]);
             ItemRecycleFilter = GetItemRecycleFilter();
-            PokemonsToEvolve = GetPokemon("./UserSettings/PokemonToEvolve.cfg");
-            PokemonsNotToTransfer = GetPokemon("./UserSettings/PokemonToKeep.cfg");
-            PokemonsNotToCatch = GetPokemon("./UserSettings/PokemonToAvoid.cfg");
-            LocationsToVisit = GetLocations("./UserSettings/LocationsToCycle.cfg");
+            PokemonsToEvolve = GetPokemon(AppDomain.CurrentDomain.BaseDirectory + "/UserSettings/PokemonToEvolve.cfg");
+            PokemonsNotToTransfer = GetPokemon(AppDomain.CurrentDomain.BaseDirectory + "/UserSettings/PokemonToKeep.cfg");
+            PokemonsNotToCatch = GetPokemon(AppDomain.CurrentDomain.BaseDirectory + "/UserSettings/PokemonToAvoid.cfg");
+            LocationsToVisit = GetLocations(AppDomain.CurrentDomain.BaseDirectory + "/UserSettings/LocationsToCycle.cfg");
             BurstMode = Convert.ToBoolean(ConfigurationManager.AppSettings["UseBurstMode"]);
             //
         }
@@ -55,7 +55,7 @@ namespace PokemonGo.Haxton.Bot.Settings
         private Dictionary<ItemId, int> GetItemRecycleFilter()
         {
             var dict = new Dictionary<ItemId, int>();
-            var text = File.ReadAllLines("./UserSettings/ItemListAndCount.cfg");
+            var text = File.ReadAllLines(AppDomain.CurrentDomain.BaseDirectory + "/UserSettings/ItemListAndCount.cfg");
             foreach (var line in text)
             {
                 var kvp = line.Split(' ');
