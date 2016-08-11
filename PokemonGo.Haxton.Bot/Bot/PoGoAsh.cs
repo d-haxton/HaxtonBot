@@ -62,13 +62,13 @@ namespace PokemonGo.Haxton.Bot.Bot
                 var currentLat = _navigation.CurrentLatitude;
                 var currentLong = _navigation.CurrentLongitude;
                 await Task.Delay(1000);
-                var tl = await BurstCatch(currentLat, currentLong, .001, .001);
+                var tl = await BurstCatch(currentLat, currentLong, .003, .003);
                 //await Task.Delay(1000);
                 //var bl = await BurstCatch(currentLat, currentLong, .001, -.001);
                 //await Task.Delay(1000);
                 //var tr = await BurstCatch(currentLat, currentLong, -.001, .001);
                 //await Task.Delay(1000);
-                var br = await BurstCatch(currentLat, currentLong, -.001, -.001);
+                var br = await BurstCatch(currentLat, currentLong, -.003, -.003);
                 actionList.AddRange(tl);
                 //actionList.AddRange(bl);
                 //actionList.AddRange(tr);
