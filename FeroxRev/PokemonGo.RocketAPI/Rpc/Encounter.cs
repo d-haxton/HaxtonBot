@@ -1,19 +1,21 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using POGOProtos.Enums;
+﻿using POGOProtos.Enums;
 using POGOProtos.Inventory.Item;
 using POGOProtos.Networking.Requests;
 using POGOProtos.Networking.Requests.Messages;
 using POGOProtos.Networking.Responses;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
 
 namespace PokemonGo.RocketAPI.Rpc
 {
     public class Encounter : BaseRpc
     {
-        public Encounter(Client client) : base(client) { }
+        public Encounter(Client client) : base(client)
+        {
+        }
 
         public async Task<EncounterResponse> EncounterPokemon(ulong encounterId, string spawnPointGuid)
         {
@@ -24,7 +26,7 @@ namespace PokemonGo.RocketAPI.Rpc
                 PlayerLatitude = _client.CurrentLatitude,
                 PlayerLongitude = _client.CurrentLongitude
             };
-            
+
             return await PostProtoPayload<Request, EncounterResponse>(RequestType.Encounter, message);
         }
 
@@ -34,9 +36,9 @@ namespace PokemonGo.RocketAPI.Rpc
             {
                 EncounterId = encounterId,
                 ItemId = itemId,
-                SpawnPointGuid = spawnPointGuid
+                SpawnPointId = spawnPointGuid
             };
-            
+
             return await PostProtoPayload<Request, UseItemCaptureResponse>(RequestType.UseItemCapture, message);
         }
 
@@ -52,7 +54,7 @@ namespace PokemonGo.RocketAPI.Rpc
                 SpinModifier = spinModifier,
                 NormalizedHitPosition = normalizedHitPos
             };
-            
+
             return await PostProtoPayload<Request, CatchPokemonResponse>(RequestType.CatchPokemon, message);
         }
 

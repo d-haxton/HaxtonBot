@@ -9,6 +9,8 @@ namespace PokemonGo.Haxton.Bot.Login
     public interface IPoGoLogin
     {
         void DoLogin();
+
+        Task LoginLoop();
     }
 
     public class PoGoLogin : IPoGoLogin
@@ -37,11 +39,24 @@ namespace PokemonGo.Haxton.Bot.Login
             logger.Info($"Logging in with account type: {_client.AuthType}");
             if (_client.AuthType == AuthType.Google)
             {
-                _apiLogin.DoGoogleLogin(_client.Settings.GoogleUsername, _client.Settings.GooglePassword).GetAwaiter().GetResult();
+                _apiLogin.DoGoogleLogin(_client.Settings.GoogleUsername, _client.Settings.GooglePassword)
+                    .GetAwaiter()
+                    .GetResult();
             }
             else
             {
-                _apiLogin.DoPtcLogin(_client.Settings.PtcUsername, _client.Settings.PtcPassword).GetAwaiter().GetResult();
+                _apiLogin.DoPtcLogin(_client.Settings.PtcUsername, _client.Settings.PtcPassword)
+                    .GetAwaiter()
+                    .GetResult();
+            }
+        }
+
+        public async Task LoginLoop()
+        {
+            while (true)
+            {
+                await Task.Delay(1800000);
+                DoLogin();
             }
         }
     }

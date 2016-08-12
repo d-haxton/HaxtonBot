@@ -1,0 +1,27 @@
+﻿<UserControl x:Class="PokemonGo.Haxton.Bot.UI.View.PokemonView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:local="clr-namespace:PokemonGo.Haxton.Bot.UI.View.Pokemon"
+             xmlns:dragablz="http://dragablz.net/winfx/xaml/dragablz"
+             mc:Ignorable="d"
+             DataContext="{Binding PokemonDataContext, Source={StaticResource Locator}}"
+             d:DesignHeight="300" d:DesignWidth="300">
+    <Grid>
+        <dragablz:TabablzControl>
+            <TabItem Header="Inventory">
+                <local:PokemonInventoryView />
+            </TabItem>
+            <TabItem Header="Avoid List">
+                <local:AvoidListView />
+            </TabItem>
+            <TabItem Header="Keep List">
+                <local:KeepListView />
+            </TabItem>
+            <TabItem Header="Evolve List">
+                <local:EvolveListView />
+            </TabItem>
+        </dragablz:TabablzControl>
+    </Grid>
+</UserControl>

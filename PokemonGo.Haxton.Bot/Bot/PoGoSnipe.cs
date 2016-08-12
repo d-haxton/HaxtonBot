@@ -19,6 +19,7 @@ namespace PokemonGo.Haxton.Bot.Bot
     public interface IPoGoSnipe
     {
         ConcurrentBag<KeyValuePair<double, double>> SnipeLocations { get; }
+
         void AddNewSnipe(double x, double y);
 
         Task DoSnipe();
@@ -56,7 +57,6 @@ namespace PokemonGo.Haxton.Bot.Bot
                 foreach (var act in funcs)
                 {
                     act.Invoke();
-                    await Task.Delay(1500);
                 }
             }
             catch (ArgumentException)

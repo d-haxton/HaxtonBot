@@ -8,6 +8,7 @@ using PokemonGo.Haxton.Bot.Navigation;
 using PokemonGo.Haxton.Bot.Settings;
 using PokemonGo.Haxton.Bot.Utilities;
 using PokemonGo.RocketAPI;
+using PokemonGo.RocketAPI.Extensions;
 using StructureMap;
 using System;
 using System.Collections.Generic;
@@ -32,6 +33,17 @@ namespace PokemonGo.Haxton.Console
         [HandleProcessCorruptedStateExceptions]
         private static void Main(string[] args)
         {
+            //System.Console.WriteLine("Please enter a token if you have one. If you do not, please hit enter and continue.");
+            //System.Console.WriteLine("A token is a paid service where you can request more pokemon per hour.");
+            //System.Console.Write("Token: ");
+            //var token = System.Console.ReadLine();
+            System.Console.WriteLine("Welcome to open beta of Haxton bot.");
+            System.Console.WriteLine("Open beta will commence for 2 days, then after suggestions and input we will be going down for a short peroid and brought back up.");
+            System.Console.WriteLine("Currently, everything is free and nothing costs money. Unfortunately, there are some costs that go along with maintaining a bot, therefore if donations do not offset these costs, the bot may go 'freemium', I wouldn't like that, I want to keep it free.");
+            System.Console.WriteLine("If you have a few dollars, please consider donating, this bot is written by 1 person, not the 20 that others are.");
+            System.Console.WriteLine("Donate: https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=Y6MMSS79F2WLG");
+            System.Console.WriteLine("Discord: https://discord.gg/Xt5JnHS");
+            Thread.Sleep(2500);
             _cancelTokenSource = new CancellationTokenSource();
             ShouldRun = true;
             while (ShouldRun)
@@ -43,6 +55,7 @@ namespace PokemonGo.Haxton.Console
                     container = new Container(_ =>
                     {
                         _.For<IApiBaseRpc>().Use<ApiBaseRpc>().Singleton();
+                        _.For<IApiFailureStrategy>().Use<ApiFailureStrategy>().Singleton();
                         _.For<IApiClient>().Use<ApiClient>().Singleton();
                         _.For<IApiDownload>().Use<ApiDownload>().Singleton();
                         _.For<IApiEncounter>().Use<ApiEncounter>().Singleton();
@@ -55,11 +68,10 @@ namespace PokemonGo.Haxton.Console
                         _.For<IPoGoAsh>().Use<PoGoAsh>().Singleton();
                         _.For<IPoGoPokemon>().Use<PoGoPokemon>().Singleton();
                         _.For<IPoGoPokestop>().Use<PoGoPokestop>().Singleton();
-                        _.For<IPoGoBot>().Use<PoGoBot>().Singleton();
+                        _.For<IPoGoBot>().Use<Bot.Bot.PoGoBot>().Singleton();
                         _.For<IPoGoInventory>().Use<PoGoInventory>().Ctor<CancellationToken>().Is(_cancelTokenSource.Token).Singleton();
                         _.For<IPoGoEncounter>().Use<PoGoEncounter>().Singleton();
                         _.For<IPoGoNavigation>().Use<PoGoNavigation>().Singleton();
-                        _.For<IPoGoMap>().Use<PoGoMap>().Singleton();
                         _.For<IPoGoStatistics>().Use<PoGoStatistics>().Singleton();
                         _.For<IPoGoSnipe>().Use<PoGoSnipe>().Singleton();
                         _.For<IPoGoLogin>().Use<PoGoLogin>().Singleton();
@@ -88,7 +100,7 @@ namespace PokemonGo.Haxton.Console
                 catch (AggregateException e)
                 {
                     logger.Fatal("\nAggregateException thrown with the following inner exceptions:");
-                    // Display information about each exception. 
+                    // Display information about each exception.
                     foreach (var v in e.InnerExceptions)
                     {
                         if (v is TaskCanceledException)
@@ -122,6 +134,7 @@ namespace PokemonGo.Haxton.Console
                     {
                         var login = container.GetInstance<IPoGoLogin>();
                         login.DoLogin();
+                        Task.Run(login.LoginLoop);
                         var bot = container.GetInstance<IPoGoBot>();
                         task = bot.Run(_token);
                         task.Add(Task.Run(async () => { await UpdateConsole(_token); }, _token));
@@ -131,7 +144,7 @@ namespace PokemonGo.Haxton.Console
                     catch (AggregateException e)
                     {
                         logger.Fatal("\nAggregateException thrown with the following inner exceptions:");
-                        // Display information about each exception. 
+                        // Display information about each exception.
                         foreach (var v in e.InnerExceptions)
                         {
                             if (v is TaskCanceledException)
@@ -173,7 +186,7 @@ namespace PokemonGo.Haxton.Console
             {
                 try
                 {
-                    if( System.Console.KeyAvailable)
+                    if (System.Console.KeyAvailable)
                     {
                         var input = System.Console.ReadLine();
                         if (input == "exit")

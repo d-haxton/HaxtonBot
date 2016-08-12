@@ -23,7 +23,7 @@ namespace PokemonGo.Haxton.Bot.Navigation
 
         Task TeleportToPokestop(FortData closestPokestop);
 
-        Task TeleportToLocation(double lat, double longitude);
+        Task<PlayerUpdateResponse> TeleportToLocation(double lat, double longitude);
 
         Task Move(FortData pokestop, Action action);
     }
@@ -170,9 +170,9 @@ namespace PokemonGo.Haxton.Bot.Navigation
             await _player.UpdatePlayerLocation(closestPokestop.Latitude, closestPokestop.Longitude, _settings.DefaultAltitude);
         }
 
-        public async Task TeleportToLocation(double lat, double longitude)
+        public async Task<PlayerUpdateResponse> TeleportToLocation(double lat, double longitude)
         {
-            await _player.UpdatePlayerLocation(lat, longitude, _settings.DefaultAltitude);
+            return await _player.UpdatePlayerLocation(lat, longitude, _settings.DefaultAltitude);
         }
 
         public async Task Move(FortData pokestop, Action action)

@@ -46,7 +46,7 @@ namespace PokemonGo.Haxton.Bot.Bot
             {
                 pokestopBooty = await _fort.SearchFort(closestPokestop.Id, closestPokestop.Latitude, closestPokestop.Longitude);
             }
-            logger.Info("Softban removed.");
+            //logger.Info("Softban removed.");
         }
 
         public IEnumerable<FortData> Pokestops
@@ -54,7 +54,7 @@ namespace PokemonGo.Haxton.Bot.Bot
             get
             {
                 var mapObjects = _map.GetMapObjects().GetAwaiter().GetResult();
-                var pokeStops = mapObjects.MapCells
+                var pokeStops = mapObjects.Item1.MapCells
                     .SelectMany(i => i.Forts)
                     .Where(
                         i =>
@@ -84,7 +84,7 @@ namespace PokemonGo.Haxton.Bot.Bot
             }
             else
             {
-                logger.Info("Possible softban detected, attempting to remove.");
+                //logger.Info("Possible softban detected, attempting to remove.");
                 await RemoveSoftBan(pokestop);
             }
         }

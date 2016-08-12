@@ -39,12 +39,16 @@
       <HintPath>..\packages\morelinq.1.4.0\lib\net35\MoreLinq.dll</HintPath>
       <Private>True</Private>
     </Reference>
+    <Reference Include="Newtonsoft.Json, Version=9.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
+      <HintPath>..\packages\Newtonsoft.Json.9.0.1\lib\net45\Newtonsoft.Json.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
     <Reference Include="NLog, Version=4.0.0.0, Culture=neutral, PublicKeyToken=5120e14c03d0593c, processorArchitecture=MSIL">
       <HintPath>..\packages\NLog.4.4.0-betaV15\lib\net45\NLog.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="POGOProtos, Version=1.4.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\POGOProtos.1.4.0\lib\net45\POGOProtos.dll</HintPath>
+    <Reference Include="RestSharp, Version=105.1.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\RestSharp.105.1.0\lib\net452\RestSharp.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="System" />
@@ -71,12 +75,14 @@
     <Compile Include="ApiProvider\ApiClient.cs" />
     <Compile Include="ApiProvider\ApiDownload.cs" />
     <Compile Include="ApiProvider\ApiEncounter.cs" />
+    <Compile Include="ApiProvider\ApiFailureStrategy.cs" />
     <Compile Include="ApiProvider\ApiFort.cs" />
     <Compile Include="ApiProvider\ApiInventory.cs" />
     <Compile Include="ApiProvider\ApiLogin.cs" />
     <Compile Include="ApiProvider\ApiMap.cs" />
     <Compile Include="ApiProvider\ApiMisc.cs" />
     <Compile Include="ApiProvider\ApiPlayer.cs" />
+    <Compile Include="Bot\PoGoApi.cs" />
     <Compile Include="Bot\PoGoAsh.cs" />
     <Compile Include="Bot\PoGoBot.cs" />
     <Compile Include="Bot\PoGoPokemon.cs" />
@@ -85,8 +91,10 @@
     <Compile Include="Navigation\PoGoEncounter.cs" />
     <Compile Include="Navigation\PoGoFort.cs" />
     <Compile Include="Navigation\PoGoMap.cs" />
-    <Compile Include="Settings\LogicSettings.cs" />
-    <Compile Include="Settings\Settings.cs" />
+    <Compile Include="PokemonModel.cs" />
+    <Compile Include="Navigation\Settings\LogicSettings.cs" />
+    <Compile Include="Navigation\Settings\Settings.cs" />
+    <Compile Include="Utilities\EncryptionHelper.cs" />
     <Compile Include="Utilities\PoGoStatistics.cs" />
     <Compile Include="Utilities\StringUtils.cs" />
     <Compile Include="Utilities\GPXReader.cs" />
@@ -95,22 +103,12 @@
     <Compile Include="Login\PoGoLogin.cs" />
     <Compile Include="Navigation\PoGoNavigation.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="Settings\ILogicSettings.cs" />
+    <Compile Include="Navigation\Settings\ILogicSettings.cs" />
     <Compile Include="Utilities\PokemonInfo.cs" />
-  </ItemGroup>
-  <ItemGroup />
-  <ItemGroup>
-    <ProjectReference Include="..\FeroxRev\PokemonGo.RocketAPI\PokemonGo.RocketAPI.csproj">
-      <Project>{05d2da44-1b8e-4cf7-94ed-4d52451cd095}</Project>
-      <Name>PokemonGo.RocketAPI</Name>
-    </ProjectReference>
   </ItemGroup>
   <ItemGroup>
     <None Include="app.config" />
     <None Include="packages.config" />
-    <None Include="UserSettings\LocationsToCycle.cfg">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
     <None Include="UserSettings\ItemListAndCount.cfg">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
@@ -126,6 +124,21 @@
     <None Include="UserSettings\PokemonToEvolve.cfg">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\POGOProtos\POGOProtos.csproj">
+      <Project>{a03a7bb2-4f0b-467b-84b2-9a76e6aae6fb}</Project>
+      <Name>POGOProtos</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\PokemonGo.RocketAPI\PokemonGo.RocketAPI.csproj">
+      <Project>{05d2da44-1b8e-4cf7-94ed-4d52451cd095}</Project>
+      <Name>PokemonGo.RocketAPI</Name>
+    </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="encrypt.dll">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

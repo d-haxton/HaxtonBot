@@ -1,0 +1,50 @@
+﻿<controls:MetroWindow x:Class="PokemonGo.Haxton.Bot.UI.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:PokemonGo.Haxton.Bot.UI"
+        xmlns:controls="http://metro.mahapps.com/winfx/xaml/controls"
+        xmlns:dragablz="http://dragablz.net/winfx/xaml/dragablz"
+        xmlns:view="clr-namespace:PokemonGo.Haxton.Bot.UI.View"
+        xmlns:dialogs="clr-namespace:MahApps.Metro.Controls.Dialogs;assembly=MahApps.Metro"
+        mc:Ignorable="d"
+        DataContext="{Binding MainDataContext, Source={StaticResource Locator}}"
+        dialogs:DialogParticipation.Register="{Binding}"
+        Title="Haxton" Height="550" Width="650">
+    <Grid>
+        <StackPanel>
+            <DockPanel>
+                <Label Margin="5">Account:</Label>
+                <ComboBox Margin="5" MinWidth="150" DisplayMemberPath="Nickname" ItemsSource="{Binding Accounts}" SelectedItem="{Binding SelectedAccount}" />
+                <Button Margin="5" Content="Add Account" Command="{Binding AddAccountCommand}" />
+            </DockPanel>
+            <dragablz:TabablzControl>
+                <TabItem Header="Home" IsSelected="True">
+                    <view:HomeView />
+                </TabItem>
+                <TabItem Header="Pokemon">
+                    <view:PokemonView />
+                </TabItem>
+                <TabItem Header="Sniping">
+                    <view:SnipeView />
+                </TabItem>
+                <TabItem Header="Inventory">
+                    <view:InventoryView />
+                </TabItem>
+                <TabItem Header="Statistics">
+                    <view:StatisticsView />
+                </TabItem>
+                <TabItem Header="Settings">
+                    <view:AccountSettingsView />
+                </TabItem>
+                <TabItem Header="Logging">
+                    <view:LoggingView />
+                </TabItem>
+                <TabItem Header="Elite">
+                    <view:EliteView />
+                </TabItem>
+            </dragablz:TabablzControl>
+        </StackPanel>
+    </Grid>
+</controls:MetroWindow>

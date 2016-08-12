@@ -66,13 +66,13 @@
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\FeroxRev\PokemonGo.RocketAPI\PokemonGo.RocketAPI.csproj">
-      <Project>{05D2DA44-1B8E-4CF7-94ED-4D52451CD095}</Project>
-      <Name>PokemonGo.RocketAPI</Name>
-    </ProjectReference>
     <ProjectReference Include="..\PokemonGo.Haxton.Bot\PokemonGo.Haxton.Bot.csproj">
       <Project>{b8fb8016-60e3-41f6-94ed-e4ba195e2029}</Project>
       <Name>PokemonGo.Haxton.Bot</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\PokemonGo.RocketAPI\PokemonGo.RocketAPI.csproj">
+      <Project>{05d2da44-1b8e-4cf7-94ed-4d52451cd095}</Project>
+      <Name>PokemonGo.RocketAPI</Name>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

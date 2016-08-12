@@ -66,9 +66,9 @@ namespace PokemonGo.Haxton.Bot.ApiProvider
                 Pokeball = pokeballItemId,
                 SpawnPointId = spawnPointGuid,
                 HitPokemon = true,
-                NormalizedReticleSize = normalizedRecticleSize,
-                SpinModifier = spinModifier,
-                NormalizedHitPosition = normalizedHitPos
+                NormalizedReticleSize = 1.950,
+                SpinModifier = .850,
+                NormalizedHitPosition = 1.0
             };
 
             return await _baseRpc.PostProtoPayload<Request, CatchPokemonResponse>(RequestType.CatchPokemon, message);
@@ -78,7 +78,7 @@ namespace PokemonGo.Haxton.Bot.ApiProvider
         {
             var message = new IncenseEncounterMessage()
             {
-                EncounterId = (long)encounterId,
+                EncounterId = (ulong)encounterId,
                 EncounterLocation = encounterLocation
             };
 

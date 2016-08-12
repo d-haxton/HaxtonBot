@@ -1,4 +1,6 @@
 ﻿using MoreLinq;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using NLog;
 using POGOProtos.Enums;
 using POGOProtos.Map.Fort;
@@ -7,11 +9,17 @@ using POGOProtos.Networking.Responses;
 using PokemonGo.Haxton.Bot.ApiProvider;
 using PokemonGo.Haxton.Bot.Navigation;
 using PokemonGo.Haxton.Bot.Utilities;
+using PokemonGo.Haxton.PoGoBot.Model;
+using RestSharp;
+using RestSharp.Deserializers;
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Xml;
+using System.Xml.Serialization;
 
 namespace PokemonGo.Haxton.Bot.Bot
 {
@@ -25,9 +33,11 @@ namespace PokemonGo.Haxton.Bot.Bot
 
         Task EncounterLurePokemonAndCatch(FortData pokestop);
 
-        Task<IEnumerable<Func<bool>>> EncounterPokemon(IEnumerable<MapPokemon> pokemon);
+        Task<IEnumerable<Action>> EncounterPokemon(IEnumerable<MapPokemon> pokemon);
 
         Task<IEnumerable<MapPokemon>> PokemonToCatch(IEnumerable<MapPokemon> foundPokemon);
+
+        IEnumerable<MapPokemon> CloudPokemon(int count);
     }
 
     public class PoGoPokemon : IPoGoPokemon
@@ -46,10 +56,52 @@ namespace PokemonGo.Haxton.Bot.Bot
             _logicSettings = logicSettings;
         }
 
+        private RestClient Rc { get; } = new RestClient("http://haxton.io/");
+        private readonly List<string> _foundPokemonAlready = new List<string>();
+
+        public IEnumerable<MapPokemon> CloudPokemon(int take)
+        {
+            var cloudPokemon = new List<MapPokemon>();
+
+            var request = new RestRequest($"api/pokemon", Method.GET);
+            var response = Rc.Execute(request);
+            if (response.Content.Length > 2)
+            {
+                dynamic json = JObject.Parse("{\"pokemon\":" + response.Content + "}");
+                foreach (var pokemonString in json.pokemon)
+                {
+                    string encounter = pokemonString.EncounterId;
+                    string expires = pokemonString.Expires;
+                    string latitude = pokemonString.Latitude;
+                    string longitude = pokemonString.Longitude;
+                    string pokemonid = pokemonString.Name;
+                    string spawn = pokemonString.SpawnId;
+                    var mapPokemon = new MapPokemon()
+                    {
+                        EncounterId = ulong.Parse(encounter, CultureInfo.InvariantCulture),
+                        ExpirationTimestampMs = long.Parse(expires, CultureInfo.InvariantCulture),
+                        Latitude = double.Parse(latitude, CultureInfo.InvariantCulture),
+                        Longitude = double.Parse(longitude, CultureInfo.InvariantCulture),
+                        PokemonId = EnumHelper.ParseEnum<PokemonId>(pokemonid),
+                        SpawnPointId = spawn
+                    };
+                    if (!_foundPokemonAlready.Contains(encounter + spawn))
+                    {
+                        cloudPokemon.Add(mapPokemon);
+                    }
+                }
+            }
+            var catchableCloud = cloudPokemon.Take(take).ToList();
+            _foundPokemonAlready.AddRange(catchableCloud.Select(t => t.EncounterId + t.SpawnPointId));
+
+            return catchableCloud;
+        }
+
         public async Task<IEnumerable<MapPokemon>> GetPokemon()
         {
             var mapObjects = await _map.GetMapObjects();
-            var catchable = mapObjects.MapCells.SelectMany(i => i.CatchablePokemons).ToList();
+            var catchable = mapObjects.Item1.MapCells.SelectMany(i => i.CatchablePokemons).ToList();
+
             return
                 catchable.OrderBy(
                     t =>
@@ -60,23 +112,39 @@ namespace PokemonGo.Haxton.Bot.Bot
 
         public async Task EncounterPokemonAndCatch(IEnumerable<MapPokemon> pokemon)
         {
-            foreach (var mapPokemon in pokemon)
+            var lat = _navigation.CurrentLatitude;
+            var lng = _navigation.CurrentLongitude;
+            var mapPokemons = pokemon as MapPokemon[] ?? pokemon.ToArray();
+            var pokemonToRetry = mapPokemons.ToList();
+            foreach (var mapPokemon in mapPokemons)
             {
                 if (_logicSettings.UsePokemonToNotCatchFilter && _logicSettings.PokemonsNotToCatch.Contains(mapPokemon.PokemonId))
                 {
                     continue;
                 }
+                await _navigation.TeleportToLocation(mapPokemon.Latitude, mapPokemon.Longitude);
                 var encounter = await _encounter.EncounterPokemonAsync(mapPokemon);
                 if (encounter.Status == EncounterResponse.Types.Status.EncounterSuccess)
                 {
                     try
                     {
-                        await _encounter.CatchPokemon(encounter, mapPokemon);
+                        await _navigation.TeleportToLocation(lat, lng);
+                        pokemonToRetry.Remove(mapPokemon);
+
+                        if ((await _encounter.CatchPokemon(encounter, mapPokemon)).Status ==
+                            CatchPokemonResponse.Types.CatchStatus.CatchError)
+                        {
+                            _map.EncounterSpawnList.Remove(mapPokemon.EncounterId + mapPokemon.SpawnPointId);
+                        }
                     }
                     catch (Exception ex)
                     {
                         logger.Error(ex, "Unable to catch pokemon");
                     }
+                }
+                else
+                {
+                    logger.Warn($"Encounter failed with reason : {encounter.Status}");
                 }
             }
         }
@@ -113,9 +181,9 @@ namespace PokemonGo.Haxton.Bot.Bot
             }
         }
 
-        public async Task<IEnumerable<Func<bool>>> EncounterPokemon(IEnumerable<MapPokemon> pokemon)
+        public async Task<IEnumerable<Action>> EncounterPokemon(IEnumerable<MapPokemon> pokemon)
         {
-            var actionList = new List<Func<bool>>();
+            var actionList = new List<Action>();
             foreach (var mapPokemon in pokemon)
             {
                 if (_logicSettings.UsePokemonToNotCatchFilter && _logicSettings.PokemonsNotToCatch.Contains(mapPokemon.PokemonId))
@@ -129,15 +197,17 @@ namespace PokemonGo.Haxton.Bot.Bot
                     {
                         try
                         {
-                            return _encounter.CatchPokemon(encounter, mapPokemon).GetAwaiter().GetResult().Status ==
-                                   CatchPokemonResponse.Types.CatchStatus.CatchError;
+                            _encounter.CatchPokemon(encounter, mapPokemon).GetAwaiter().GetResult();
                         }
                         catch (Exception ex)
                         {
                             logger.Error(ex, "Unable to catch pokemon");
                         }
-                        return false;
                     });
+                }
+                else
+                {
+                    logger.Warn($"Encounter failed with reason : {encounter.Status}");
                 }
             }
             return actionList;
@@ -147,6 +217,14 @@ namespace PokemonGo.Haxton.Bot.Bot
         {
             var pokemon = await GetPokemon();
             return _logicSettings.UsePokemonToNotCatchFilter ? pokemon.Where(x => _logicSettings.PokemonsNotToCatch.Contains(x.PokemonId)) : pokemon;
+        }
+    }
+
+    public static class EnumHelper
+    {
+        public static T ParseEnum<T>(string value)
+        {
+            return (T)Enum.Parse(typeof(T), value, true);
         }
     }
 }

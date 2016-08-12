@@ -56,6 +56,9 @@ namespace PokemonGo.Haxton.Bot.Inventory
         Task TransferPokemon(ulong id);
 
         int GetItemAmountByType(ItemId itemPokeBall);
+
+        Dictionary<ItemId, int> PokeballsDictionary { get; }
+        int Pokeballs { get; }
     }
 
     public class PoGoInventory : IPoGoInventory
@@ -77,8 +80,29 @@ namespace PokemonGo.Haxton.Bot.Inventory
             _token = token;
 
             ShouldUpdateInventory = true;
+            PokeballsDictionary = new Dictionary<ItemId, int>()
+            {
+                { ItemId.ItemPokeBall, 0},
+                { ItemId.ItemGreatBall, 0},
+                { ItemId.ItemUltraBall, 0},
+                { ItemId.ItemMasterBall, 0}
+            };
 
             Task.Run(UpdateInventory);
+        }
+
+        public Dictionary<ItemId, int> PokeballsDictionary { get; }
+
+        public int Pokeballs
+        {
+            get
+            {
+                var count = PokeballsDictionary[ItemId.ItemPokeBall];
+                count += PokeballsDictionary[ItemId.ItemGreatBall];
+                count += PokeballsDictionary[ItemId.ItemUltraBall];
+                count += PokeballsDictionary[ItemId.ItemMasterBall];
+                return count;
+            }
         }
 
         public GetInventoryResponse CachedInventory
@@ -134,7 +158,7 @@ namespace PokemonGo.Haxton.Bot.Inventory
         public void RecycleItems(ItemId itemId, int amount)
         {
             RecycleInventoryItemResponse res = _apiInventory.RecycleItem(itemId, amount).GetAwaiter().GetResult();
-            if(res.Result != RecycleInventoryItemResponse.Types.Result.Success)
+            if (res.Result != RecycleInventoryItemResponse.Types.Result.Success)
             {
                 throw new Exception("Unable to recycle item");
             }
@@ -266,8 +290,7 @@ namespace PokemonGo.Haxton.Bot.Inventory
                         new ItemData
                         {
                             ItemId = x.ItemId,
-                            Count =
-                                x.Count - filter.Single(f => f.Key == x.ItemId).Value,
+                            Count = x.Count - filter.Single(f => f.Key == x.ItemId).Value,
                             Unseen = x.Unseen
                         });
         }
@@ -319,9 +342,19 @@ namespace PokemonGo.Haxton.Bot.Inventory
             {
                 var inventory = await RequestInventory();
                 if (inventory.InventoryDelta?.InventoryItems != null && inventory.Success)
+                {
                     CachedInventory = inventory;
+                    lock (PokeballsDictionary)
+                    {
+                        foreach (var itemData in Items)
+                        {
+                            if (itemData.ItemId == ItemId.ItemPokeBall || itemData.ItemId == ItemId.ItemGreatBall || itemData.ItemId == ItemId.ItemUltraBall || itemData.ItemId == ItemId.ItemMasterBall)
+                                PokeballsDictionary[itemData.ItemId] = itemData.Count;
+                        }
+                    }
+                }
                 CachedItemTemplates = await _apiDownload.GetItemTemplates();
-                await Task.Delay(30000);
+                await Task.Delay(30000, _token);
             }
             _token.ThrowIfCancellationRequested();
         }
@@ -331,6 +364,7 @@ namespace PokemonGo.Haxton.Bot.Inventory
             await Task.Delay(1500);
             logger.Info($"Updating inventory at {DateTime.Now}");
             var inventory = await _apiInventory.GetInventory();
+
             return inventory;
         }
     }

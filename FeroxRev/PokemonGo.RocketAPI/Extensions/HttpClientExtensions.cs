@@ -9,10 +9,23 @@ using System.Threading.Tasks;
 
 namespace PokemonGo.RocketAPI.Extensions
 {
+    public enum ApiOperation
+    {
+        Retry,
+        Abort
+    }
+
+    public interface IApiFailureStrategy
+    {
+        Task<ApiOperation> HandleApiFailure(RequestEnvelope request, ResponseEnvelope response);
+
+        void HandleApiSuccess(RequestEnvelope request, ResponseEnvelope response);
+    }
+
     public static class HttpClientExtensions
     {
         public static async Task<TResponsePayload> PostProtoPayload<TRequest, TResponsePayload>(this System.Net.Http.HttpClient client,
-            string url, RequestEnvelope requestEnvelope) where TRequest : IMessage<TRequest>
+            string url, RequestEnvelope requestEnvelope, IApiFailureStrategy strategy) where TRequest : IMessage<TRequest>
             where TResponsePayload : IMessage<TResponsePayload>, new()
         {
             var attempts = 0;
@@ -53,6 +66,41 @@ namespace PokemonGo.RocketAPI.Extensions
             decodedResponse.MergeFrom(codedStream);
 
             return decodedResponse;
+        }
+
+        public static async Task<IMessage[]> PostProtoPayload<TRequest>(this System.Net.Http.HttpClient client,
+    string url, RequestEnvelope requestEnvelope,
+    IApiFailureStrategy strategy,
+    params Type[] responseTypes) where TRequest : IMessage<TRequest>
+        {
+            var result = new IMessage[responseTypes.Length];
+            for (var i = 0; i < responseTypes.Length; i++)
+            {
+                result[i] = Activator.CreateInstance(responseTypes[i]) as IMessage;
+                if (result[i] == null)
+                {
+                    throw new ArgumentException($"ResponseType {i} is not an IMessage");
+                }
+            }
+
+            ResponseEnvelope response;
+            while ((response = await PostProto<TRequest>(client, url, requestEnvelope)).Returns.Count != responseTypes.Length)
+            {
+                var operation = await strategy.HandleApiFailure(requestEnvelope, response);
+                if (operation == ApiOperation.Abort)
+                {
+                    //throw new InvalidResponseException($"Expected {responseTypes.Length} responses, but got {response.Returns.Count} responses");
+                }
+            }
+
+            strategy.HandleApiSuccess(requestEnvelope, response);
+
+            for (var i = 0; i < responseTypes.Length; i++)
+            {
+                var payload = response.Returns[i];
+                result[i].MergeFrom(payload);
+            }
+            return result;
         }
     }
 }

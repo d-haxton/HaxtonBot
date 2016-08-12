@@ -39,7 +39,8 @@ namespace PokemonGo.Haxton.Bot.ApiProvider
         {
             _client.AuthType = AuthType.Google;
 
-            _client.AuthToken = GoogleLogin.DoLogin(username, password);
+            var googleLogin = new GoogleLogin(username, password);
+            _client.AuthToken = await googleLogin.GetAccessToken();
             //GoogleLogin.TokenResponseModel tokenResponse;
             //if (_client.Settings.GoogleRefreshToken != string.Empty)
             //{
@@ -61,7 +62,9 @@ namespace PokemonGo.Haxton.Bot.ApiProvider
 
         public async Task DoPtcLogin(string username, string password)
         {
-            _client.AuthToken = await PtcLogin.GetAccessToken(username, password);
+            var ptcLogin = new PtcLogin(username, password);
+
+            _client.AuthToken = await ptcLogin.GetAccessToken();
             _client.AuthType = AuthType.Ptc;
 
             await SetServer();
@@ -83,7 +86,7 @@ namespace PokemonGo.Haxton.Bot.ApiProvider
                     Hash = "05daf51635c82611d1aac95c0b051d3ec088a930"
                 };
 
-                var serverRequest = _apiBaseRpc.RequestBuilder.GetRequestEnvelope(
+                var serverRequest = _apiBaseRpc.RequestBuilder.GetInitialRequestEnvelope(
                     new Request
                     {
                         RequestType = RequestType.GetPlayer,
@@ -104,10 +107,6 @@ namespace PokemonGo.Haxton.Bot.ApiProvider
                     {
                         RequestType = RequestType.DownloadSettings,
                         RequestMessage = downloadSettingsMessage.ToByteString()
-                    },
-                    new Request()
-                    {
-                        RequestType = RequestType.DownloadItemTemplates
                     });
 
                 var serverResponse = await _apiBaseRpc.PostProto<Request>(Resources.RpcUrl, serverRequest);

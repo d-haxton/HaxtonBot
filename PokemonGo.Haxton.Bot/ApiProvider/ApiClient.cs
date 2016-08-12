@@ -1,6 +1,7 @@
 ﻿using POGOProtos.Networking.Envelopes;
 using PokemonGo.RocketAPI;
 using PokemonGo.RocketAPI.Enums;
+using PokemonGo.RocketAPI.Extensions;
 
 namespace PokemonGo.Haxton.Bot.ApiProvider
 {
@@ -14,6 +15,7 @@ namespace PokemonGo.Haxton.Bot.ApiProvider
         string ApiUrl { get; set; }
         AuthTicket AuthTicket { get; set; }
         string AuthToken { get; set; }
+        IApiFailureStrategy ApiFailure { get; set; }
     }
 
     public class ApiClient : IApiClient
@@ -32,9 +34,11 @@ namespace PokemonGo.Haxton.Bot.ApiProvider
 
         public AuthTicket AuthTicket { get; set; }
         public string AuthToken { get; set; }
+        public IApiFailureStrategy ApiFailure { get; set; }
 
-        public ApiClient(ISettings settings)
+        public ApiClient(IApiFailureStrategy apiFailure, ISettings settings)
         {
+            ApiFailure = apiFailure;
             Settings = settings;
             AuthType = settings.AuthType;
 
