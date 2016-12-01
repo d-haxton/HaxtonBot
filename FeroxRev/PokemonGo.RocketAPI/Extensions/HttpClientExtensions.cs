@@ -43,6 +43,11 @@ namespace PokemonGo.RocketAPI.Extensions
             if (attempts >= 25)
             {
                 Console.WriteLine($"Failed to request packet {typeof(TResponsePayload).Name}");
+                // i think we should restart at this point
+                if (response.StatusCode == 102)
+                {
+                    throw new InvalidResponseException();
+                }
                 return new TResponsePayload();
             }
 
